@@ -55,9 +55,9 @@ const mainSlidesData = [
         title: 'Уют в каждой комнате',
         subtitle: 'Листайте, чтобы увидеть больше',
         nestedSlides: [
-            { id: 'b2s1', image: '/images/nested-1.jpg' },
-            { id: 'b2s2', image: '/images/nested-2.jpg' },
-            { id: 'b2s3', image: '/images/nested-3.jpg' },
+            { id: 'b2s1', image: '/images/nested-1.jpg', width: 320, height: 300 },
+            { id: 'b2s2', image: '/images/nested-2.jpg', width: 320, height: 380 },
+            { id: 'b2s3', image: '/images/nested-3.jpg', width: 300, height: 300 },
         ]
     },
     {
@@ -67,9 +67,9 @@ const mainSlidesData = [
         title: 'Новая коллекция',
         subtitle: 'Вертикальный взгляд на стиль',
         nestedSlides: [
-            { id: 'b3s1', image: '/images/nested-vertical-1.jpg' },
-            { id: 'b3s2', image: '/images/nested-vertical-2.jpg' },
-            { id: 'b3s3', image: '/images/nested-vertical-3.jpg' },
+            { id: 'b3s1', image: '/images/nested-vertical-1.jpg', width: 250, height: 400 },
+            { id: 'b3s2', image: '/images/nested-vertical-2.jpg', width: 350, height: 350 },
+            { id: 'b3s3', image: '/images/nested-vertical-3.jpg', width: 280, height: 420 },
         ]
     }
 ];
@@ -78,6 +78,7 @@ const HomePage = () => {
     const mainSliderRef = useRef(null);
     const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
     const [nestedSlideIndex, setNestedSlideIndex] = useState(0);
+    // НОВОЕ: Состояние для индекса вертикального слайдера
     const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
     useEffect(() => {
@@ -139,8 +140,9 @@ const HomePage = () => {
         verticalSwiping: true,
         autoplay: true,
         autoplaySpeed: 3000,
+        // ИЗМЕНЕНО: Обновляем состояние для вертикального слайдера
         afterChange: (index) => {
-            setNestedVerticalSlideIndex(index); // <-- добавлено!
+            setNestedVerticalSlideIndex(index);
             if (index === mainSlidesData[2].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) {
@@ -151,16 +153,11 @@ const HomePage = () => {
         }
     };
 
-    // ИЗМЕНЕНО: Обновлена логика высоты. 
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
-
-    let verticalFrameSize = { width: 350, height: 450 }; 
-
-    if (nestedVerticalSlideIndex === 1) { 
-        verticalFrameSize = { width: 300, height: 500 };
-    } else if (nestedVerticalSlideIndex === 2) { 
-        verticalFrameSize = { width: 400, height: 420 };
-    }
+    
+    // НОВОЕ: Логика для анимированной высоты вертикальной рамки
+    // Можете менять эти значения, чтобы настроить анимацию
+    const verticalFrameHeight = nestedVerticalSlideIndex === 1 ? 450 : 350;
 
     return (
         <>
@@ -178,7 +175,7 @@ const HomePage = () => {
                                     <h1 className="text-4xl md:text-5xl font-bold text-gray-800">{banner.title}</h1>
                                     <p className="text-lg text-gray-600 mt-4">{banner.subtitle}</p>
                                     <button className="mt-6 px-6 py-2 bg-gray-800 text-white font-semibold rounded-md hover:bg-gray-700">
-                                        <Link to="/catalog" state={{ selectedCategory: 'Все товары' }}>Каталог</Link>
+                                        Купить
                                     </button>
                                 </div>
                                 <div className="w-full md:w-2/3 h-full flex items-center justify-center">
@@ -199,43 +196,15 @@ const HomePage = () => {
                                             >
                                                 <Slider {...nestedHorizontalSettings} className="w-full h-full">
                                                     {banner.nestedSlides.map(slide => (
-                                                        <div key={slide.id}>
-                                                            {/* ИЗМЕНЕНО: Эта обертка создает отступ в 20px (10px + 10px) между слайдами */}
-                                                            <div style={{ padding: '0 10px', boxSizing: 'border-box' }}>
-                                                                <img
-                                                                    src={slide.image}
-                                                                    alt={slide.id}
-                                                                    className="w-full h-full object-cover rounded-lg"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </Slider>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {banner.type === 'nested-vertical' && (
-                                        // ИЗМЕНЕНО: Вычисляем размеры вертикального слайда
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <div 
-                                                style={{ 
-                                                    // Используем адаптивные размеры
-                                                    height: `${verticalFrameSize.height}px`,
-                                                    width: `${verticalFrameSize.width}px`,
-                                                    border: '2px solid red',
-                                                    overflow: 'hidden',
-                                                    boxSizing: 'border-box',
-                                                    // Добавляем плавный переход для размеров
-                                                    transition: 'width 0.4s ease-in-out, height 0.4s ease-in-out'
-                                                }} 
-                                            >
-                                                <Slider {...nestedVerticalSettings} className="h-full">
-                                                    {banner.nestedSlides.map(slide => (
-                                                        <div key={slide.id} className="p-2 w-full h-full flex items-center justify-center">
-                                                            <img 
-                                                                src={slide.image} 
-                                                                alt={slide.id} 
-                                                                className="object-contain max-h-full max-w-full"
+                                                        <div key={slide.id} className="w-full h-full flex justify-center items-center">
+                                                            <img
+                                                                src={slide.image}
+                                                                alt={slide.id}
+                                                                style={{
+                                                                    width: `${slide.width}px`,
+                                                                    height: `${slide.height}px`,
+                                                                }}
+                                                                className="object-cover rounded-lg"
                                                             />
                                                         </div>
                                                     ))}
@@ -243,7 +212,34 @@ const HomePage = () => {
                                             </div>
                                         </div>
                                     )}
-
+                                    {/* ИЗМЕНЕНО: Полностью заменяем блок nested-vertical */}
+                                    {banner.type === 'nested-vertical' && (
+                                        <div
+                                            className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
+                                            style={{
+                                                width: 360, // Ширина рамки, как у горизонтального
+                                                height: `${verticalFrameHeight}px`, // Анимированная высота
+                                                overflow: 'hidden',
+                                                transition: 'height 0.4s ease-in-out'
+                                            }}
+                                        >
+                                            <Slider {...nestedVerticalSettings} className="w-full h-full">
+                                                {banner.nestedSlides.map(slide => (
+                                                    <div key={slide.id} className="w-full h-full flex items-center justify-center">
+                                                        <img
+                                                            src={slide.image}
+                                                            alt={slide.id}
+                                                            style={{
+                                                                width: `${slide.width}px`,
+                                                                height: `${slide.height}px`,
+                                                            }}
+                                                            className="object-contain max-w-full"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </Slider>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
