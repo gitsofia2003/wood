@@ -154,8 +154,6 @@ const HomePage = () => {
     // ИЗМЕНЕНО: Обновлена логика высоты. 
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
 
-    let verticalFrameSize = { width: 350, height: 450 }; 
-
     const verticalFrameHeight = nestedVerticalSlideIndex === 1 ? 450 : 350;
 
     return (
@@ -222,15 +220,16 @@ const HomePage = () => {
                                         >
                                             <Slider {...nestedVerticalSettings} className="w-full h-full">
                                                 {banner.nestedSlides.map(slide => (
-                                                    <div key={slide.id} className="w-full h-full flex items-center justify-center">
+                                                    <div key={slide.id} className="w-full h-full flex items-center justify-center p-4 md:p-8">
+                                                        {/* Ключевое изменение: 
+                                                            - Внутренний div-обертка с классом 'p-4 md:p-8' (padding) создает пространство вокруг картинки.
+                                                            - Это и есть тот самый отступ между слайдами при прокрутке. 
+                                                            - Вы можете изменить значение (например, на p-10), чтобы увеличить расстояние.
+                                                        */}
                                                         <img
                                                             src={slide.image}
                                                             alt={slide.id}
-                                                            style={{
-                                                                width: `${slide.width}px`,
-                                                                height: `${slide.height}px`,
-                                                            }}
-                                                            className="object-contain max-w-full"
+                                                            className="object-contain max-w-full max-h-full"
                                                         />
                                                     </div>
                                                 ))}
