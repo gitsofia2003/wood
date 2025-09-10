@@ -1,25 +1,65 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { auth } from './firebase';
+import { onAuthStateChanged } from "firebase/auth";
 
-function App() {
+// Импортируем компоненты и страницы
+import Header from './components/Header';
+import Footer from './components/Footer';
+import HomePage from './pages/HomePage';
+import CatalogPage from './pages/CatalogPage';
+import LoginPage from './pages/LoginPage';
+import AdminPage from './pages/AdminPage';
+
+// Создаем пустые страницы "О нас" и "Контакты"
+const AboutPage = () => <div className="container mx-auto p-8"><h1 className="text-2xl">О нас</h1></div>;
+const ContactPage = () => <div className="container mx-auto p-8"><h1 className="text-2xl">Контакты</h1></div>;
+
+// Компонент для защиты админ-панели
+const PrivateRoute = ({ user, children }) => {
+  return user ? children : <Navigate to="/login" />;
+};
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return <div>Загрузка...</div>; // Показываем заглушку, пока проверяется статус входа
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="bg-white text-dark-gray flex flex-col min-h-screen">
+        <Header user={user} />
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/catalog" element={<CatalogPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route 
+              path="/admin" 
+              element={
+                <PrivateRoute user={user}>
+                  <AdminPage />
+                </PrivateRoute>
+              } 
+            />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </Router>
   );
 }
-
-export default App;
+ 

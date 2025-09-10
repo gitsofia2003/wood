@@ -1,13 +1,138 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+
+    /* Стили для слайдера и анимации текста */
+
+.hero-slider .slick-dots li button:before {
+    font-size: 12px;
+    color: white;
+    opacity: 0.5;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.hero-slider .slick-dots li.slick-active button:before {
+    color: white;
+    opacity: 1;
+}
+
+.hero-slider .slick-dots {
+    bottom: 25px;
+}
+
+/* Анимация для текста */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 40px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.slick-active .slide-text {
+    animation: fadeInUp 1s ease-out 0.5s;
+    animation-fill-mode: both;
+}
+
+/* --- ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ КАСТОМНЫХ СТРЕЛОК --- */
+
+.custom-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    width: 44px;   /* Немного увеличил размер для удобства */
+    height: 44px;
+    display: flex !important; /* <-- ГЛАВНОЕ ИЗМЕНЕНИЕ: Гарантирует, что стрелки будут видны */
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: background 0.3s ease;
+}
+
+.custom-arrow:hover {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* Используем более конкретные селекторы, чтобы наши стили имели приоритет */
+.slick-prev.prev-arrow {
+    left: 25px;
+}
+
+.slick-next.next-arrow {
+    right: 25px;
+}
+
+/* Делаем неактивные стрелки полупрозрачными, а не полностью невидимыми */
+.slick-disabled {
+    opacity: 0.2;
+    cursor: default;
+}
+
+/* НОВОЕ: Ключевые кадры для анимаций */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate3d(0, -50px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 50px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* НОВОЕ: Применение анимаций к разным элементам */
+/* Заголовок выпадает сверху */
+.slick-active .animate-title {
+    animation: fadeInDown 0.8s ease-out 0.4s both;
+}
+/* Описание и кнопка поднимаются снизу */
+.slick-active .animate-body {
+    animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+/* 1. Делаем контейнер слайдера точкой отсчета для стрелок */
+.hero-slider {
+  position: relative;
+}
+
+/* 2. Прячем любой контент, который случайно выходит за рамки ширины экрана */
+body {
+  overflow-x: hidden;
+}
+
+/* Фикс для вертикального слайдера */
+.slick-vertical .slick-slide {
+    height: auto !important;
+    border: none;
+}
+
+/* frame-img для баннера */
+.frame-img {
+    width: 350px;
+    height: 350px;
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    border: 4px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
 }
