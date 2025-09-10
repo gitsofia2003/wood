@@ -4,14 +4,13 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Ваш firebaseConfig из проекта woodsite-v2
 const firebaseConfig = {
-  apiKey: "AIzaSyDrVeWzzvSuxreXenezHkQMR8V0X9IeWtY", // 't' вместо 'T' в конце
-  authDomain: "woodsite-v2.firebaseapp.com",
-  projectId: "woodsite-v2",
-  storageBucket: "woodsite-v2.firebasestorage.app",
-  messagingSenderId: "616515332584",
-  // Обратите внимание на '8' вместо 'b'
-  appId: "1:616515332584:web:33e198db4cd0aa0ce3dc5d", 
-  measurementId: "G-CDBWW4GTJ7"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 const app = initializeApp(firebaseConfig);
 
