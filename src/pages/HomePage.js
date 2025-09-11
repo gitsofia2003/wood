@@ -200,8 +200,7 @@ const HomePage = () => {
                     {mainSlidesData.map(banner => (
                         <div key={banner.id}>
                             {/* ИЗМЕНЕНО: Уменьшены отступы по умолчанию (p-4) и высота (h-auto min-h-[90vh]) для гибкости */}
-                            <div className={`flex flex-col md:flex-row items-center justify-center p-4 md:p-12 h-auto min-h-[90vh] ${banner.bgColor}`}>
-                                
+                            <div className={`flex flex-col md:flex-row items-center justify-center p-4 md:p-12 h-auto md:min-h-[90vh] ${banner.bgColor}`}>                                
                                 {/* --- Блок с текстом --- */}
                                 {/* ИЗМЕНЕНО: Уменьшены размеры текста для мобильных */}
                                 <div className="w-full md:w-1/3 text-center md:text-left mb-8 md:mb-0">
