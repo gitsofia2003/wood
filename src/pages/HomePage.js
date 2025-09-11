@@ -154,7 +154,12 @@ const HomePage = () => {
     // ИЗМЕНЕНО: Обновлена логика высоты. 
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
 
-    const verticalFrameHeight = mainSlidesData[2].nestedSlides[nestedVerticalSlideIndex]?.height || 350;
+    const verticalSliderData = mainSlidesData[2]; // Предполагаем, что это всегда 3-й баннер
+    const currentVerticalSlide = verticalSliderData.nestedSlides[nestedVerticalSlideIndex];
+
+    // 2. Рассчитываем размеры рамки с отступом в 10px с каждой стороны (всего 20px)
+    const frameWidth = currentVerticalSlide.width + 20;
+    const frameHeightVertical = currentVerticalSlide.height + 20;
 
     return (
         <>
@@ -212,20 +217,25 @@ const HomePage = () => {
                                         <div
                                             className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
                                             style={{
-                                                width: 360, // Ширина рамки, как у горизонтального
-                                                height: `${verticalFrameHeight}px`, // Анимированная высота
+                                                // 3. Применяем динамические размеры
+                                                width: `${frameWidth}px`,
+                                                height: `${frameHeightVertical}px`,
                                                 overflow: 'hidden',
-                                                transition: 'height 0.4s ease-in-out'
+                                                // 4. Анимируем и ширину, и высоту
+                                                transition: 'width 0.4s ease-in-out, height 0.4s ease-in-out'
                                             }}
                                         >
                                             <Slider {...nestedVerticalSettings} className="w-full h-full">
                                                 {banner.nestedSlides.map(slide => (
                                                     <div key={slide.id} className="w-full h-full flex items-center justify-center">
-                                                        {/* ИЗМЕНЕНО: Убираем стили, чтобы картинка заполняла рамку */}
                                                         <img
                                                             src={slide.image}
                                                             alt={slide.id}
-                                                            className="w-full h-full object-cover"
+                                                            style={{
+                                                                width: `${slide.width}px`,
+                                                                height: `${slide.height}px`,
+                                                            }}
+                                                            className="object-contain" // object-contain лучше подходит, если пропорции важны
                                                         />
                                                     </div>
                                                 ))}
