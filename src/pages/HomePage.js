@@ -68,31 +68,9 @@ const mainSlidesData = [
         title: 'Новая коллекция',
         subtitle: 'Вертикальный взгляд на стиль',
         nestedSlides: [
-            // Добавляем frameWidth и frameHeight для каждой картинки
-            {
-                id: 'b3s1',
-                image: '/images/nested-vertical-1.jpg',
-                width: 370,
-                height: 400,
-                frameWidth: 390,  // Ширина рамки (370 + 20)
-                frameHeight: 270  // Высота рамки (400 + 20)
-            },
-            {
-                id: 'b3s2',
-                image: '/images/nested-vertical-2.jpg',
-                width: 350,
-                height: 350,
-                frameWidth: 370,  // Ширина рамки (350 + 20)
-                frameHeight: 370  // Высота рамки (350 + 20)
-            },
-            {
-                id: 'b3s3',
-                image: '/images/nested-vertical-3.jpg',
-                width: 320,
-                height: 420,
-                frameWidth: 340,  // Ширина рамки (320 + 20)
-                frameHeight: 440  // Высота рамки (420 + 20)
-            },
+            { id: 'b2s1', image: '/images/nested-vertical-1.jpg' }, // Используйте пути к вашим новым фото
+            { id: 'b2s2', image: '/images/nested-vertical-2.jpg' },
+            { id: 'b2s3', image: '/images/nested-vertical-3.jpg' },
         ]
     }
 ];
@@ -177,12 +155,8 @@ const HomePage = () => {
     // ИЗМЕНЕНО: Обновлена логика высоты. 
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
 
-    const verticalSliderData = mainSlidesData[2];
-const currentVerticalSlide = verticalSliderData.nestedSlides[nestedVerticalSlideIndex];
-
-// Читаем ширину и высоту рамки напрямую из данных
-const frameWidth = currentVerticalSlide.frameWidth;
-const frameHeightVertical = currentVerticalSlide.frameHeight;
+    const FIXED_FRAME_WIDTH = 1024 + 16; // 1024px (ширина фото) + 2 * 8px (отступы)
+    const FIXED_FRAME_HEIGHT = 919 + 16; // 919px (высота фото) + 2 * 8px (отступы)
 
     return (
         <>
@@ -241,8 +215,8 @@ const frameHeightVertical = currentVerticalSlide.frameHeight;
                                             className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
                                             style={{
                                                 // 3. Применяем динамические размеры
-                                                width: `${frameWidth}px`,
-                                                height: `${frameHeightVertical}px`,
+                                                width: `${FIXED_FRAME_WIDTH}px`,
+                                                height: `${FIXED_FRAME_HEIGHT}px`,
                                                 overflow: 'hidden',
                                                 // 4. Анимируем и ширину, и высоту
                                                 transition: 'width 0.4s ease-in-out, height 0.4s ease-in-out'
@@ -254,11 +228,12 @@ const frameHeightVertical = currentVerticalSlide.frameHeight;
                                                         <img
                                                             src={slide.image}
                                                             alt={slide.id}
+                                                            // Сами изображения тоже теперь имеют фиксированный размер
                                                             style={{
-                                                                width: `${slide.width}px`,
-                                                                height: `${slide.height}px`,
+                                                                width: '1024px', // Указываем точный размер изображения
+                                                                height: '919px', // Указываем точный размер изображения
                                                             }}
-                                                            className="object-contain" // object-contain лучше подходит, если пропорции важны
+                                                            className="object-contain"
                                                         />
                                                     </div>
                                                 ))}
