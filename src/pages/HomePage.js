@@ -76,7 +76,6 @@ const mainSlidesData = [
 
 const HomePage = () => {
     const mainSliderRef = useRef(null);
-    // ИЗМЕНЕНО: Добавляем refs для каждого вложенного слайдера
     const nestedHSliderRef = useRef(null);
     const nestedVSliderRef = useRef(null);
 
@@ -84,7 +83,7 @@ const HomePage = () => {
     const [nestedSlideIndex, setNestedSlideIndex] = useState(0);
     const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
-    // Этот useEffect для простого слайда оставляем без изменений
+    // useEffect для простого слайда (без изменений)
     useEffect(() => {
         const currentBanner = mainSlidesData[currentBannerIndex];
         let timerId;
@@ -98,27 +97,23 @@ const HomePage = () => {
         return () => clearTimeout(timerId);
     }, [currentBannerIndex]);
 
-    // ИЗМЕНЕНО: Добавляем новый useEffect для прямого управления вложенными слайдерами
+    // ИЗМЕНЕНО: Этот useEffect теперь отвечает ТОЛЬКО за play и pause. Сброс убран.
     useEffect(() => {
-        // Управляем горизонтальным слайдером
         if (nestedHSliderRef.current) {
             if (currentBannerIndex === 1) {
-                nestedHSliderRef.current.slickGoTo(0); // Сбрасываем на первый слайд
-                nestedHSliderRef.current.slickPlay();  // Запускаем
+                nestedHSliderRef.current.slickPlay();
             } else {
-                nestedHSliderRef.current.slickPause(); // Ставим на паузу
+                nestedHSliderRef.current.slickPause();
             }
         }
-        // Управляем вертикальным слайдером
         if (nestedVSliderRef.current) {
             if (currentBannerIndex === 2) {
-                nestedVSliderRef.current.slickGoTo(0); // Сбрасываем на первый слайд
-                nestedVSliderRef.current.slickPlay();  // Запускаем
+                nestedVSliderRef.current.slickPlay();
             } else {
-                nestedVSliderRef.current.slickPause(); // Ставим на паузу
+                nestedVSliderRef.current.slickPause();
             }
         }
-    }, [currentBannerIndex]); // Этот эффект будет срабатывать каждый раз, когда меняется главный баннер
+    }, [currentBannerIndex]);
 
 
     const mainSliderSettings = {
@@ -131,10 +126,20 @@ const HomePage = () => {
         nextArrow: <NextArrow />,
         prevArrow: <PrevArrow />,
         autoplay: false,
-        afterChange: (index) => setCurrentBannerIndex(index)
+        afterChange: (index) => setCurrentBannerIndex(index),
+        // ИЗМЕНЕНО: Добавляем beforeChange для "фонового" сброса слайдеров
+        beforeChange: (oldIndex, newIndex) => {
+            // Если следующий слайд - горизонтальная галерея, сбрасываем ее на 1й кадр
+            if (newIndex === 1 && nestedHSliderRef.current) {
+                nestedHSliderRef.current.slickGoTo(0, true); // true = без анимации
+            }
+            // Если следующий слайд - вертикальная галерея, сбрасываем ее на 1й кадр
+            if (newIndex === 2 && nestedVSliderRef.current) {
+                nestedVSliderRef.current.slickGoTo(0, true);
+            }
+        }
     };
     
-    // ИЗМЕНЕНО: autoplay теперь всегда true, но управляется через useEffect выше
     const nestedHorizontalSettings = {
         dots: false,
         infinite: false,
@@ -218,7 +223,6 @@ const HomePage = () => {
                                                     transition: 'height 0.4s ease-in-out'
                                                 }}
                                             >
-                                                {/* ИЗМЕНЕНО: Привязываем ref к слайдеру */}
                                                 <Slider ref={nestedHSliderRef} {...nestedHorizontalSettings} className="w-full h-full">
                                                     {banner.nestedSlides.map(slide => (
                                                         <div key={slide.id}>
@@ -245,7 +249,6 @@ const HomePage = () => {
                                                 transition: 'width 0.4s ease-in-out, height 0.4s ease-in-out'
                                             }}
                                         >
-                                            {/* ИЗМЕНЕНО: Привязываем ref к слайдеру */}
                                             <Slider ref={nestedVSliderRef} {...nestedVerticalSettings} className="w-full h-full">
                                                 {banner.nestedSlides.map(slide => (
                                                     <div key={slide.id} className="w-full h-full flex items-center justify-center">
