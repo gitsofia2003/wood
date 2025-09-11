@@ -67,9 +67,9 @@ const mainSlidesData = [
         title: 'Новая коллекция',
         subtitle: 'Вертикальный взгляд на стиль',
         nestedSlides: [
-            { id: 'b3s1', image: '/images/nested-vertical-1.jpg' },
-            { id: 'b3s2', image: '/images/nested-vertical-2.jpg' },
-            { id: 'b3s3', image: '/images/nested-vertical-3.jpg' },
+            { id: 'b3s1', image: '/images/nested-vertical-1.jpg', width: 250, height: 400 },
+            { id: 'b3s2', image: '/images/nested-vertical-2.jpg', width: 350, height: 350 },
+            { id: 'b3s3', image: '/images/nested-vertical-3.jpg', width: 280, height: 420 },
         ]
     }
 ];
@@ -220,16 +220,15 @@ const HomePage = () => {
                                         >
                                             <Slider {...nestedVerticalSettings} className="w-full h-full">
                                                 {banner.nestedSlides.map(slide => (
-                                                    <div key={slide.id} className="w-full h-full flex items-center justify-center p-4 md:p-8">
-                                                        {/* Ключевое изменение: 
-                                                            - Внутренний div-обертка с классом 'p-4 md:p-8' (padding) создает пространство вокруг картинки.
-                                                            - Это и есть тот самый отступ между слайдами при прокрутке. 
-                                                            - Вы можете изменить значение (например, на p-10), чтобы увеличить расстояние.
-                                                        */}
+                                                    <div key={slide.id} className="w-full h-full flex items-center justify-center">
                                                         <img
                                                             src={slide.image}
                                                             alt={slide.id}
-                                                            className="object-contain max-w-full max-h-full"
+                                                            style={{
+                                                                width: `${slide.width}px`,
+                                                                height: `${slide.height}px`,
+                                                            }}
+                                                            className="object-contain max-w-full"
                                                         />
                                                     </div>
                                                 ))}
