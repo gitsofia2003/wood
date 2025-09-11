@@ -83,7 +83,6 @@ const HomePage = () => {
     const [nestedSlideIndex, setNestedSlideIndex] = useState(0);
     const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
-    // useEffect для простого слайда (без изменений)
     useEffect(() => {
         const currentBanner = mainSlidesData[currentBannerIndex];
         let timerId;
@@ -97,7 +96,6 @@ const HomePage = () => {
         return () => clearTimeout(timerId);
     }, [currentBannerIndex]);
 
-    // ИЗМЕНЕНО: Этот useEffect теперь отвечает ТОЛЬКО за play и pause. Сброс убран.
     useEffect(() => {
         if (nestedHSliderRef.current) {
             if (currentBannerIndex === 1) {
@@ -127,22 +125,20 @@ const HomePage = () => {
         prevArrow: <PrevArrow />,
         autoplay: false,
         afterChange: (index) => setCurrentBannerIndex(index),
-        // ИЗМЕНЕНО: Добавляем beforeChange для "фонового" сброса слайдеров
         beforeChange: (oldIndex, newIndex) => {
-            // Если следующий слайд - горизонтальная галерея, сбрасываем ее на 1й кадр
             if (newIndex === 1 && nestedHSliderRef.current) {
-                nestedHSliderRef.current.slickGoTo(0, true); // true = без анимации
+                nestedHSliderRef.current.slickGoTo(0, true);
             }
-            // Если следующий слайд - вертикальная галерея, сбрасываем ее на 1й кадр
             if (newIndex === 2 && nestedVSliderRef.current) {
                 nestedVSliderRef.current.slickGoTo(0, true);
             }
         }
     };
     
+    // ИЗМЕНЕНО: Логика вложенных слайдеров для стабильной работы
     const nestedHorizontalSettings = {
         dots: false,
-        infinite: false,
+        infinite: true, // ИЗМЕНЕНО: Включаем зацикливание для стабильного тайминга
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
@@ -151,7 +147,11 @@ const HomePage = () => {
         autoplaySpeed: 3000,
         afterChange: (index) => {
             setNestedSlideIndex(index);
+            // Когда доходим до последнего слайда
             if (index === mainSlidesData[1].nestedSlides.length - 1) {
+                // Немедленно ставим на паузу, чтобы он не перешел на первый кадр
+                nestedHSliderRef.current.slickPause();
+                // И теперь запускаем наш надежный таймер для смены главного баннера
                 setTimeout(() => {
                     if (mainSliderRef.current) {
                         mainSliderRef.current.slickNext();
@@ -163,7 +163,7 @@ const HomePage = () => {
 
     const nestedVerticalSettings = {
         dots: false,
-        infinite: false,
+        infinite: true, // ИЗМЕНЕНО: Включаем зацикливание
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
@@ -175,6 +175,9 @@ const HomePage = () => {
         afterChange: (index) => {
             setNestedVerticalSlideIndex(index);
             if (index === mainSlidesData[2].nestedSlides.length - 1) {
+                // Ставим на паузу на последнем слайде
+                nestedVSliderRef.current.slickPause();
+                // Запускаем таймер на смену
                 setTimeout(() => {
                     if (mainSliderRef.current) {
                         mainSliderRef.current.slickNext();
