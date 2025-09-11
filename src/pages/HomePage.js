@@ -75,7 +75,7 @@ const mainSlidesData = [
                 width: 370,
                 height: 400,
                 frameWidth: 390,  // Ширина рамки (370 + 20)
-                frameHeight: 420  // Высота рамки (400 + 20)
+                frameHeight: 270  // Высота рамки (400 + 20)
             },
             {
                 id: 'b3s2',
@@ -195,7 +195,7 @@ const frameHeightVertical = currentVerticalSlide.frameHeight;
                 <Slider ref={mainSliderRef} {...mainSliderSettings}>
                     {mainSlidesData.map(banner => (
                         <div key={banner.id}>
-                            <div className={`flex flex-col md:flex-row items-center justify-center p-8 md:p-12 h-[70vh] ${banner.bgColor}`}>
+                            <div className={`flex flex-col md:flex-row items-center justify-center p-8 md:p-12 h-[85vh] ${banner.bgColor}`}>
                                 <div className="w-full md:w-1/3 text-center md:text-left mb-8 md:mb-0">
                                     <h1 className="text-4xl md:text-5xl font-bold text-gray-800">{banner.title}</h1>
                                     <p className="text-lg text-gray-600 mt-4">{banner.subtitle}</p>
