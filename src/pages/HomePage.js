@@ -67,7 +67,7 @@ const mainSlidesData = [
         title: 'Новая коллекция',
         subtitle: 'Вертикальный взгляд на стиль',
         nestedSlides: [
-            { id: 'b3s1', image: '/images/nested-vertical-1.jpg', width: 400, height: 400 },
+            { id: 'b3s1', image: '/images/nested-vertical-1.jpg', width: 370, height: 400 },
             { id: 'b3s2', image: '/images/nested-vertical-2.jpg', width: 350, height: 350 },
             { id: 'b3s3', image: '/images/nested-vertical-3.jpg', width: 320, height: 420 },
         ]
@@ -154,7 +154,7 @@ const HomePage = () => {
     // ИЗМЕНЕНО: Обновлена логика высоты. 
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
 
-    const verticalFrameHeight = nestedVerticalSlideIndex === 1 ? 450 : 350;
+    const verticalFrameHeight = mainSlidesData[2].nestedSlides[nestedVerticalSlideIndex]?.height || 350;
 
     return (
         <>
@@ -221,14 +221,11 @@ const HomePage = () => {
                                             <Slider {...nestedVerticalSettings} className="w-full h-full">
                                                 {banner.nestedSlides.map(slide => (
                                                     <div key={slide.id} className="w-full h-full flex items-center justify-center">
+                                                        {/* ИЗМЕНЕНО: Убираем стили, чтобы картинка заполняла рамку */}
                                                         <img
                                                             src={slide.image}
                                                             alt={slide.id}
-                                                            style={{
-                                                                width: `${slide.width}px`,
-                                                                height: `${slide.height}px`,
-                                                            }}
-                                                            className="object-contain max-w-full"
+                                                            className="w-full h-full object-cover"
                                                         />
                                                     </div>
                                                 ))}
