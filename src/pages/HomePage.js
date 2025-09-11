@@ -76,14 +76,18 @@ const mainSlidesData = [
 
 const HomePage = () => {
     const mainSliderRef = useRef(null);
+    // ИЗМЕНЕНО: Добавляем refs для каждого вложенного слайдера
+    const nestedHSliderRef = useRef(null);
+    const nestedVSliderRef = useRef(null);
+
     const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
     const [nestedSlideIndex, setNestedSlideIndex] = useState(0);
     const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
+    // Этот useEffect для простого слайда оставляем без изменений
     useEffect(() => {
         const currentBanner = mainSlidesData[currentBannerIndex];
         let timerId;
-
         if (currentBanner.type === 'simple') {
             timerId = setTimeout(() => {
                 if (mainSliderRef.current) {
@@ -94,9 +98,32 @@ const HomePage = () => {
         return () => clearTimeout(timerId);
     }, [currentBannerIndex]);
 
+    // ИЗМЕНЕНО: Добавляем новый useEffect для прямого управления вложенными слайдерами
+    useEffect(() => {
+        // Управляем горизонтальным слайдером
+        if (nestedHSliderRef.current) {
+            if (currentBannerIndex === 1) {
+                nestedHSliderRef.current.slickGoTo(0); // Сбрасываем на первый слайд
+                nestedHSliderRef.current.slickPlay();  // Запускаем
+            } else {
+                nestedHSliderRef.current.slickPause(); // Ставим на паузу
+            }
+        }
+        // Управляем вертикальным слайдером
+        if (nestedVSliderRef.current) {
+            if (currentBannerIndex === 2) {
+                nestedVSliderRef.current.slickGoTo(0); // Сбрасываем на первый слайд
+                nestedVSliderRef.current.slickPlay();  // Запускаем
+            } else {
+                nestedVSliderRef.current.slickPause(); // Ставим на паузу
+            }
+        }
+    }, [currentBannerIndex]); // Этот эффект будет срабатывать каждый раз, когда меняется главный баннер
+
+
     const mainSliderSettings = {
         dots: true,
-        infinite: true, // Это свойство уже обеспечивает бесконечную прокрутку
+        infinite: true,
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
@@ -106,10 +133,8 @@ const HomePage = () => {
         autoplay: false,
         afterChange: (index) => setCurrentBannerIndex(index)
     };
-
-    // ИЗМЕНЕНО: Настройки вложенных слайдеров перенесены внутрь компонента,
-    // чтобы получить доступ к state `currentBannerIndex`.
-
+    
+    // ИЗМЕНЕНО: autoplay теперь всегда true, но управляется через useEffect выше
     const nestedHorizontalSettings = {
         dots: false,
         infinite: false,
@@ -117,11 +142,10 @@ const HomePage = () => {
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        autoplay: currentBannerIndex === 1, // ИЗМЕНЕНО: автопрокрутка активна только для второго баннера (индекс 1)
+        autoplay: true, 
         autoplaySpeed: 3000,
         afterChange: (index) => {
             setNestedSlideIndex(index);
-            // Логика перехода к следующему главному слайду после завершения
             if (index === mainSlidesData[1].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) {
@@ -141,15 +165,14 @@ const HomePage = () => {
         arrows: false,
         vertical: true,
         verticalSwiping: true,
-        autoplay: currentBannerIndex === 2, // ИЗМЕНЕНО: автопрокрутка активна только для третьего баннера (индекс 2)
+        autoplay: true,
         autoplaySpeed: 3000,
         afterChange: (index) => {
             setNestedVerticalSlideIndex(index);
-            // Логика перехода к следующему главному слайду после завершения
             if (index === mainSlidesData[2].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) {
-                        mainSliderRef.current.slickNext(); // За счет infinite: true перейдет на первый
+                        mainSliderRef.current.slickNext();
                     }
                 }, 3000);
             }
@@ -160,7 +183,6 @@ const HomePage = () => {
     const FIXED_FRAME_WIDTH = 1024 + 16;
     const FIXED_FRAME_HEIGHT = 919 + 16;
 
-    // ... остальной JSX код без изменений
     return (
         <>
             <div className="bg-sand border-b border-gray-200">
@@ -196,7 +218,8 @@ const HomePage = () => {
                                                     transition: 'height 0.4s ease-in-out'
                                                 }}
                                             >
-                                                <Slider {...nestedHorizontalSettings} className="w-full h-full">
+                                                {/* ИЗМЕНЕНО: Привязываем ref к слайдеру */}
+                                                <Slider ref={nestedHSliderRef} {...nestedHorizontalSettings} className="w-full h-full">
                                                     {banner.nestedSlides.map(slide => (
                                                         <div key={slide.id}>
                                                             <div style={{ padding: '0 10px', boxSizing: 'border-box' }}>
@@ -222,7 +245,8 @@ const HomePage = () => {
                                                 transition: 'width 0.4s ease-in-out, height 0.4s ease-in-out'
                                             }}
                                         >
-                                            <Slider {...nestedVerticalSettings} className="w-full h-full">
+                                            {/* ИЗМЕНЕНО: Привязываем ref к слайдеру */}
+                                            <Slider ref={nestedVSliderRef} {...nestedVerticalSettings} className="w-full h-full">
                                                 {banner.nestedSlides.map(slide => (
                                                     <div key={slide.id} className="w-full h-full flex items-center justify-center">
                                                         <img
