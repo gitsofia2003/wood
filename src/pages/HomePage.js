@@ -9,7 +9,7 @@ import CategoryFilter from '../components/CategoryFilter';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-// --- Компоненты для кастомных стрелок ---
+// --- Компоненты для кастомных стрелок (без изменений) ---
 function NextArrow(props) {
     const { className, onClick } = props;
     return (
@@ -38,7 +38,7 @@ function PrevArrow(props) {
     );
 }
 
-// --- Данные для главного слайдера ---
+// --- Данные для главного слайдера (без изменений) ---
 const mainSlidesData = [
     {
         type: 'simple',
@@ -60,7 +60,6 @@ const mainSlidesData = [
             { id: 'b2s3', image: '/images/nested-3.jpg' },
         ]
     },
-    // ... внутри mainSlidesData
     {
         type: 'nested-vertical',
         id: 'banner3',
@@ -68,9 +67,9 @@ const mainSlidesData = [
         title: 'Новая коллекция',
         subtitle: 'Вертикальный взгляд на стиль',
         nestedSlides: [
-            { id: 'b2s1', image: '/images/nested-vertical-1.jpg' }, // Используйте пути к вашим новым фото
-            { id: 'b2s2', image: '/images/nested-vertical-2.jpg' },
-            { id: 'b2s3', image: '/images/nested-vertical-3.jpg' },
+            { id: 'b3s1', image: '/images/nested-vertical-1.jpg' },
+            { id: 'b3s2', image: '/images/nested-vertical-2.jpg' },
+            { id: 'b3s3', image: '/images/nested-vertical-3.jpg' },
         ]
     }
 ];
@@ -97,7 +96,7 @@ const HomePage = () => {
 
     const mainSliderSettings = {
         dots: true,
-        infinite: true,
+        infinite: true, // Это свойство уже обеспечивает бесконечную прокрутку
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
@@ -108,6 +107,9 @@ const HomePage = () => {
         afterChange: (index) => setCurrentBannerIndex(index)
     };
 
+    // ИЗМЕНЕНО: Настройки вложенных слайдеров перенесены внутрь компонента,
+    // чтобы получить доступ к state `currentBannerIndex`.
+
     const nestedHorizontalSettings = {
         dots: false,
         infinite: false,
@@ -115,10 +117,11 @@ const HomePage = () => {
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        autoplay: true,
+        autoplay: currentBannerIndex === 1, // ИЗМЕНЕНО: автопрокрутка активна только для второго баннера (индекс 1)
         autoplaySpeed: 3000,
         afterChange: (index) => {
             setNestedSlideIndex(index);
+            // Логика перехода к следующему главному слайду после завершения
             if (index === mainSlidesData[1].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) {
@@ -138,26 +141,26 @@ const HomePage = () => {
         arrows: false,
         vertical: true,
         verticalSwiping: true,
-        autoplay: true,
+        autoplay: currentBannerIndex === 2, // ИЗМЕНЕНО: автопрокрутка активна только для третьего баннера (индекс 2)
         autoplaySpeed: 3000,
         afterChange: (index) => {
             setNestedVerticalSlideIndex(index);
+            // Логика перехода к следующему главному слайду после завершения
             if (index === mainSlidesData[2].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) {
-                        mainSliderRef.current.slickNext();
+                        mainSliderRef.current.slickNext(); // За счет infinite: true перейдет на первый
                     }
                 }, 3000);
             }
         }
     };
 
-    // ИЗМЕНЕНО: Обновлена логика высоты. 
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
+    const FIXED_FRAME_WIDTH = 1024 + 16;
+    const FIXED_FRAME_HEIGHT = 919 + 16;
 
-    const FIXED_FRAME_WIDTH = 1024 + 16; // 1024px (ширина фото) + 2 * 8px (отступы)
-    const FIXED_FRAME_HEIGHT = 919 + 16; // 919px (высота фото) + 2 * 8px (отступы)
-
+    // ... остальной JSX код без изменений
     return (
         <>
             <div className="bg-sand border-b border-gray-200">
@@ -196,7 +199,6 @@ const HomePage = () => {
                                                 <Slider {...nestedHorizontalSettings} className="w-full h-full">
                                                     {banner.nestedSlides.map(slide => (
                                                         <div key={slide.id}>
-                                                            {/* ИЗМЕНЕНО: Эта обертка создает отступ в 20px (10px + 10px) между слайдами */}
                                                             <div style={{ padding: '0 10px', boxSizing: 'border-box' }}>
                                                                 <img
                                                                     src={slide.image}
@@ -214,11 +216,9 @@ const HomePage = () => {
                                         <div
                                             className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
                                             style={{
-                                                // 3. Применяем динамические размеры
                                                 width: `${FIXED_FRAME_WIDTH}px`,
                                                 height: `${FIXED_FRAME_HEIGHT}px`,
                                                 overflow: 'hidden',
-                                                // 4. Анимируем и ширину, и высоту
                                                 transition: 'width 0.4s ease-in-out, height 0.4s ease-in-out'
                                             }}
                                         >
@@ -228,10 +228,9 @@ const HomePage = () => {
                                                         <img
                                                             src={slide.image}
                                                             alt={slide.id}
-                                                            // Сами изображения тоже теперь имеют фиксированный размер
                                                             style={{
-                                                                width: '1024px', // Указываем точный размер изображения
-                                                                height: '919px', // Указываем точный размер изображения
+                                                                width: '1024px',
+                                                                height: '919px',
                                                             }}
                                                             className="object-contain"
                                                         />
