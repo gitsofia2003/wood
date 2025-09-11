@@ -252,22 +252,20 @@ const HomePage = () => {
                                     {banner.type === 'nested-vertical' && (
                                         <>
                                             {/* --- МОБИЛЬНАЯ ВЕРСИЯ (простой горизонтальный слайдер) --- */}
-                                            {/* ИЗМЕНЕНО: Этот блок виден ТОЛЬКО на мобильных (класс "md:hidden") */}
-                                            <div className="w-full md:hidden">
-                                                <Slider {...nestedHorizontalSettings} className="w-full">
-                                                    {banner.nestedSlides.map(slide => (
-                                                        <div key={slide.id}>
-                                                            <div style={{ padding: '0 10px', boxSizing: 'border-box' }}>
+                                                <div className="w-full md:hidden">
+                                                    <Slider {...nestedHorizontalSettings} className="w-full">
+                                                        {banner.nestedSlides.map(slide => (
+                                                            <div key={slide.id}>
+                                                                {/* Теперь здесь только изображение, без лишних отступов */}
                                                                 <img
                                                                     src={slide.image}
                                                                     alt={slide.id}
-                                                                    className="w-full h-auto object-cover rounded-lg"
+                                                                    className="w-full h-auto object-cover" // Убрали rounded-lg для вида "в край"
                                                                 />
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </Slider>
-                                            </div>
+                                                        ))}
+                                                    </Slider>
+                                                </div>
 
                                             {/* --- ДЕСКТОПНАЯ ВЕРСИЯ (вертикальный слайдер) --- */}
                                             {/* ИЗМЕНЕНО: Этот блок СКРЫТ на мобильных (классы "hidden md:flex") */}
