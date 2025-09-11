@@ -9,14 +9,11 @@ import CategoryFilter from '../components/CategoryFilter';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-// --- Компоненты для кастомных стрелок ---
+// --- Компоненты для кастомных стрелок (без изменений) ---
 function NextArrow(props) {
     const { className, onClick } = props;
     return (
-        <div
-            className={`${className} custom-arrow next-arrow`}
-            onClick={onClick}
-        >
+        <div className={`${className} custom-arrow next-arrow`} onClick={onClick}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -27,10 +24,7 @@ function NextArrow(props) {
 function PrevArrow(props) {
     const { className, onClick } = props;
     return (
-        <div
-            className={`${className} custom-arrow prev-arrow`}
-            onClick={onClick}
-        >
+        <div className={`${className} custom-arrow prev-arrow`} onClick={onClick}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -38,7 +32,8 @@ function PrevArrow(props) {
     );
 }
 
-// --- Данные для главного слайдера ---
+// --- НОВЫЕ ДАННЫЕ ДЛЯ СЛАЙДЕРА ---
+// Порядок изменен и добавлено свойство 'duration'
 const mainSlidesData = [
     {
         type: 'simple',
@@ -46,30 +41,33 @@ const mainSlidesData = [
         bgColor: 'bg-blue-100',
         title: 'Мебель на отлично!',
         subtitle: 'Всё для учёбы и работы со скидками',
-        image: '/images/banner-1-bg.jpg'
+        image: '/images/banner-1-bg.jpg',
+        duration: 5000, // Показывается 5 секунд
     },
     {
-        type: 'nested-horizontal',
+        type: 'nested-vertical', // Теперь второй баннер - вертикальный
         id: 'banner2',
-        bgColor: 'bg-orange-100',
-        title: 'Уют в каждой комнате',
-        subtitle: 'Листайте, чтобы увидеть больше',
-        nestedSlides: [
-            { id: 'b2s1', image: '/images/nested-1.jpg' },
-            { id: 'b2s2', image: '/images/nested-2.jpg' },
-            { id: 'b2s3', image: '/images/nested-3.jpg' },
-        ]
-    },
-    {
-        type: 'nested-vertical',
-        id: 'banner3',
         bgColor: 'bg-teal-100',
         title: 'Новая коллекция',
         subtitle: 'Вертикальный взгляд на стиль',
+        duration: 9000, // 3 картинки по 3 секунды = 9 секунд
         nestedSlides: [
-            { id: 'b3s1', image: '/images/nested-vertical-1.jpg', width: 370, height: 400 },
-            { id: 'b3s2', image: '/images/nested-vertical-2.jpg', width: 350, height: 350 },
-            { id: 'b3s3', image: '/images/nested-vertical-3.jpg', width: 320, height: 420 },
+            { id: 'b2s1', image: '/images/nested-vertical-1.jpg', width: 370, height: 400 },
+            { id: 'b2s2', image: '/images/nested-vertical-2.jpg', width: 350, height: 350 },
+            { id: 'b2s3', image: '/images/nested-vertical-3.jpg', width: 320, height: 420 },
+        ]
+    },
+    {
+        type: 'nested-horizontal', // Третий баннер - горизонтальный
+        id: 'banner3',
+        bgColor: 'bg-orange-100',
+        title: 'Уют в каждой комнате',
+        subtitle: 'Листайте, чтобы увидеть больше',
+        duration: 9000, // 3 картинки по 3 секунды = 9 секунд
+        nestedSlides: [
+            { id: 'b3s1', image: '/images/nested-1.jpg' },
+            { id: 'b3s2', image: '/images/nested-2.jpg' },
+            { id: 'b3s3', image: '/images/nested-3.jpg' },
         ]
     }
 ];
@@ -77,22 +75,23 @@ const mainSlidesData = [
 const HomePage = () => {
     const mainSliderRef = useRef(null);
     const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-    const [nestedSlideIndex, setNestedSlideIndex] = useState(0);
     const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
+    // --- НОВАЯ ЦЕНТРАЛИЗОВАННАЯ ЛОГИКА УПРАВЛЕНИЯ ---
     useEffect(() => {
+        // Находим текущий активный баннер по его индексу
         const currentBanner = mainSlidesData[currentBannerIndex];
-        let timerId;
+        
+        // Устанавливаем таймер для переключения на следующий главный слайд
+        const timerId = setTimeout(() => {
+            if (mainSliderRef.current) {
+                mainSliderRef.current.slickNext();
+            }
+        }, currentBanner.duration); // Используем 'duration' из данных
 
-        if (currentBanner.type === 'simple') {
-            timerId = setTimeout(() => {
-                if (mainSliderRef.current) {
-                    mainSliderRef.current.slickNext();
-                }
-            }, 5000);
-        }
+        // Очищаем таймер при смене слайда или размонтировании компонента
         return () => clearTimeout(timerId);
-    }, [currentBannerIndex]);
+    }, [currentBannerIndex]); // Этот эффект перезапускается каждый раз, когда меняется главный баннер
 
     const mainSliderSettings = {
         dots: true,
@@ -103,61 +102,40 @@ const HomePage = () => {
         arrows: true,
         nextArrow: <NextArrow />,
         prevArrow: <PrevArrow />,
-        autoplay: false,
+        autoplay: false, // Главный слайдер управляется нашим useEffect, а не встроенным autoplay
         afterChange: (index) => setCurrentBannerIndex(index)
     };
-
-    const nestedHorizontalSettings = {
+    
+    // Базовые настройки для вложенных слайдеров (без autoplay)
+    const nestedSliderBaseSettings = {
         dots: false,
-        infinite: false,
+        infinite: true, // Ставим true для бесконечной прокрутки внутри
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        autoplay: true,
         autoplaySpeed: 3000,
-        afterChange: (index) => {
-            setNestedSlideIndex(index);
-            if (index === mainSlidesData[1].nestedSlides.length - 1) {
-                setTimeout(() => {
-                    if (mainSliderRef.current) {
-                        mainSliderRef.current.slickNext();
-                    }
-                }, 3000);
-            }
-        }
     };
 
+    // --- УМНОЕ АВТОПРОИГРЫВАНИЕ ---
+    // Настройки для вертикального слайдера: autoplay включается, только если он активен (index === 1)
     const nestedVerticalSettings = {
-        dots: false,
-        infinite: false,
-        speed: 500,
-        slidesToShow: 1,
-        slidesToScroll: 1,
-        arrows: false,
+        ...nestedSliderBaseSettings,
         vertical: true,
         verticalSwiping: true,
-        autoplay: true,
-        autoplaySpeed: 3000,
-        afterChange: (index) => {
-            setNestedVerticalSlideIndex(index);
-            if (index === mainSlidesData[2].nestedSlides.length - 1) {
-                setTimeout(() => {
-                    if (mainSliderRef.current) {
-                        mainSliderRef.current.slickNext();
-                    }
-                }, 3000);
-            }
-        }
+        autoplay: currentBannerIndex === 1,
+        afterChange: (index) => setNestedVerticalSlideIndex(index),
     };
 
-    // ИЗМЕНЕНО: Обновлена логика высоты. 
-    const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
-
-    const verticalSliderData = mainSlidesData[2]; // Предполагаем, что это всегда 3-й баннер
+    // Настройки для горизонтального слайдера: autoplay включается, только если он активен (index === 2)
+    const nestedHorizontalSettings = {
+        ...nestedSliderBaseSettings,
+        autoplay: currentBannerIndex === 2,
+    };
+    
+    // Динамический расчет размеров рамки для вертикального слайдера (из прошлого решения)
+    const verticalSliderData = mainSlidesData[1];
     const currentVerticalSlide = verticalSliderData.nestedSlides[nestedVerticalSlideIndex];
-
-    // 2. Рассчитываем размеры рамки с отступом в 10px с каждой стороны (всего 20px)
     const frameWidth = currentVerticalSlide.width + 20;
     const frameHeightVertical = currentVerticalSlide.height + 20;
 
@@ -184,59 +162,36 @@ const HomePage = () => {
                                     {banner.type === 'simple' && (
                                         <img src={banner.image} alt={banner.title} className="max-h-full max-w-full object-contain rounded-lg shadow-lg" />
                                     )}
-                                    {banner.type === 'nested-horizontal' && (
-                                        <div className="flex justify-center items-center h-full w-full">
-                                            <div
-                                                className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
-                                                style={{
-                                                    width: 360,
-                                                    height: `${frameHeight}px`,
-                                                    marginLeft: '16px',
-                                                    overflow: 'hidden',
-                                                    transition: 'height 0.4s ease-in-out'
-                                                }}
-                                            >
-                                                <Slider {...nestedHorizontalSettings} className="w-full h-full">
-                                                    {banner.nestedSlides.map(slide => (
-                                                        <div key={slide.id}>
-                                                            {/* ИЗМЕНЕНО: Эта обертка создает отступ в 20px (10px + 10px) между слайдами */}
-                                                            <div style={{ padding: '0 10px', boxSizing: 'border-box' }}>
-                                                                <img
-                                                                    src={slide.image}
-                                                                    alt={slide.id}
-                                                                    className="w-full h-full object-cover rounded-lg"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </Slider>
-                                            </div>
-                                        </div>
-                                    )}
+
                                     {banner.type === 'nested-vertical' && (
-                                        <div
-                                            className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
+                                        <div className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
                                             style={{
-                                                // 3. Применяем динамические размеры
                                                 width: `${frameWidth}px`,
                                                 height: `${frameHeightVertical}px`,
                                                 overflow: 'hidden',
-                                                // 4. Анимируем и ширину, и высоту
                                                 transition: 'width 0.4s ease-in-out, height 0.4s ease-in-out'
                                             }}
                                         >
                                             <Slider {...nestedVerticalSettings} className="w-full h-full">
                                                 {banner.nestedSlides.map(slide => (
                                                     <div key={slide.id} className="w-full h-full flex items-center justify-center">
-                                                        <img
-                                                            src={slide.image}
-                                                            alt={slide.id}
-                                                            style={{
-                                                                width: `${slide.width}px`,
-                                                                height: `${slide.height}px`,
-                                                            }}
-                                                            className="object-contain" // object-contain лучше подходит, если пропорции важны
-                                                        />
+                                                        <img src={slide.image} alt={slide.id} style={{ width: `${slide.width}px`, height: `${slide.height}px` }} className="object-contain" />
+                                                    </div>
+                                                ))}
+                                            </Slider>
+                                        </div>
+                                    )}
+
+                                    {banner.type === 'nested-horizontal' && (
+                                        <div className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
+                                            style={{ width: 360, height: 350, overflow: 'hidden' }}
+                                        >
+                                            <Slider {...nestedHorizontalSettings} className="w-full h-full">
+                                                {banner.nestedSlides.map(slide => (
+                                                    <div key={slide.id}>
+                                                        <div style={{ padding: '0 10px', boxSizing: 'border-box' }}>
+                                                            <img src={slide.image} alt={slide.id} className="w-full h-full object-cover rounded-lg" />
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </Slider>
