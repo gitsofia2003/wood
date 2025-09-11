@@ -67,9 +67,9 @@ const mainSlidesData = [
         title: 'Новая коллекция',
         subtitle: 'Вертикальный взгляд на стиль',
         nestedSlides: [
-            { id: 'b3s1', image: '/images/nested-vertical-1.jpg', width: 250, height: 400 },
+            { id: 'b3s1', image: '/images/nested-vertical-1.jpg', width: 400, height: 400 },
             { id: 'b3s2', image: '/images/nested-vertical-2.jpg', width: 350, height: 350 },
-            { id: 'b3s3', image: '/images/nested-vertical-3.jpg', width: 280, height: 420 },
+            { id: 'b3s3', image: '/images/nested-vertical-3.jpg', width: 320, height: 420 },
         ]
     }
 ];
