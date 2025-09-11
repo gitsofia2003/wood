@@ -60,6 +60,7 @@ const mainSlidesData = [
             { id: 'b2s3', image: '/images/nested-3.jpg' },
         ]
     },
+    // ... внутри mainSlidesData
     {
         type: 'nested-vertical',
         id: 'banner3',
@@ -67,9 +68,31 @@ const mainSlidesData = [
         title: 'Новая коллекция',
         subtitle: 'Вертикальный взгляд на стиль',
         nestedSlides: [
-            { id: 'b3s1', image: '/images/nested-vertical-1.jpg', width: 370, height: 400 },
-            { id: 'b3s2', image: '/images/nested-vertical-2.jpg', width: 350, height: 350 },
-            { id: 'b3s3', image: '/images/nested-vertical-3.jpg', width: 320, height: 420 },
+            // Добавляем frameWidth и frameHeight для каждой картинки
+            {
+                id: 'b3s1',
+                image: '/images/nested-vertical-1.jpg',
+                width: 370,
+                height: 400,
+                frameWidth: 390,  // Ширина рамки (370 + 20)
+                frameHeight: 420  // Высота рамки (400 + 20)
+            },
+            {
+                id: 'b3s2',
+                image: '/images/nested-vertical-2.jpg',
+                width: 350,
+                height: 350,
+                frameWidth: 370,  // Ширина рамки (350 + 20)
+                frameHeight: 370  // Высота рамки (350 + 20)
+            },
+            {
+                id: 'b3s3',
+                image: '/images/nested-vertical-3.jpg',
+                width: 320,
+                height: 420,
+                frameWidth: 340,  // Ширина рамки (320 + 20)
+                frameHeight: 440  // Высота рамки (420 + 20)
+            },
         ]
     }
 ];
@@ -154,12 +177,12 @@ const HomePage = () => {
     // ИЗМЕНЕНО: Обновлена логика высоты. 
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
 
-    const verticalSliderData = mainSlidesData[2]; // Предполагаем, что это всегда 3-й баннер
-    const currentVerticalSlide = verticalSliderData.nestedSlides[nestedVerticalSlideIndex];
+    const verticalSliderData = mainSlidesData[2];
+const currentVerticalSlide = verticalSliderData.nestedSlides[nestedVerticalSlideIndex];
 
-    // 2. Рассчитываем размеры рамки с отступом в 10px с каждой стороны (всего 20px)
-    const frameWidth = currentVerticalSlide.width + 20;
-    const frameHeightVertical = currentVerticalSlide.height + 20;
+// Читаем ширину и высоту рамки напрямую из данных
+const frameWidth = currentVerticalSlide.frameWidth;
+const frameHeightVertical = currentVerticalSlide.frameHeight;
 
     return (
         <>
