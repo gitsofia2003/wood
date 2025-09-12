@@ -185,8 +185,8 @@ const HomePage = () => {
     };
 
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
-    const FIXED_FRAME_WIDTH = 1024 + 16;
-    const FIXED_FRAME_HEIGHT = 919 + 16;
+    const FIXED_FRAME_WIDTH = (1024 + 16) / 2;
+    const FIXED_FRAME_HEIGHT = (919 + 16) / 2; 
 
     return (
         <>
