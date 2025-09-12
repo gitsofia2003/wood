@@ -65,12 +65,10 @@ const useIsMobile = (breakpoint = 768) => {
 // 4. Основной компонент HomePage
 // ===================================================================================
 const HomePage = () => {
-    // Определяем, мобильное ли устройство, используя наш хук
     const isMobile = useIsMobile();
 
     // ===============================================================================
-    // ОБЩИЕ ХУКИ ДЛЯ ДЕСКТОПА И МОБИЛЬНОГО
-    // ВСЕ ХУКИ ДОЛЖНЫ БЫТЬ ОБЪЯВЛЕНЫ ЗДЕСЬ, НА ВЕРХНЕМ УРОВНЕ КОМПОНЕНТА!
+    // ОБЩИЕ ХУКИ ДЛЯ ДЕСКТОПА И МОБИЛЬНОГО (объявлены на верхнем уровне)
     // ===============================================================================
 
     // Хуки и состояния для ДЕСКТОПНОЙ версии
@@ -82,58 +80,86 @@ const HomePage = () => {
     const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
     // Хуки и состояния для МОБИЛЬНОЙ версии
-    const mobileMainSliderRef = useRef(null); // Ref для главного мобильного слайдера
-    const [mobileCurrentBannerIndex, setMobileCurrentBannerIndex] = useState(0); // Индекс активного главного мобильного баннера
-    const mobileNestedHSliderRef = useRef(null); // Ref для горизонтального вложенного мобильного слайдера
-    const mobileNestedVSliderRef = useRef(null); // Ref для вертикального вложенного мобильного слайдера
+    const mobileMainSliderRef = useRef(null);
+    const [mobileCurrentBannerIndex, setMobileCurrentBannerIndex] = useState(0);
+    const mobileNestedHSliderRef = useRef(null);
+    const mobileNestedVSliderRef = useRef(null);
 
 
     // ===============================================================================
     // useEffect'ы для ДЕСКТОПНОЙ версии (не выполняются, если isMobile = true)
     // ===============================================================================
     useEffect(() => {
-        if (isMobile) return; // Пропустить, если мобильная версия
+        if (isMobile) return;
         const currentBanner = mainSlidesData[currentBannerIndex];
         let timerId;
         if (currentBanner.type === 'simple') {
             timerId = setTimeout(() => {
                 if (mainSliderRef.current) mainSliderRef.current.slickNext();
-            }, 5000); // Простой баннер показывается 5 секунд
+            }, 5000);
         }
-        return () => clearTimeout(timerId); // Очистка таймера
-    }, [currentBannerIndex, isMobile]); // Зависит от индекса баннера и режима (мобильный/десктоп)
+        return () => clearTimeout(timerId);
+    }, [currentBannerIndex, isMobile]);
 
     useEffect(() => {
-        if (isMobile) return; // Пропустить, если мобильная версия
-        // Включаем autoplay для горизонтального слайдера, только если его родительский баннер активен
+        if (isMobile) return;
         if (nestedHSliderRef.current) {
             if (currentBannerIndex === 1) nestedHSliderRef.current.slickPlay();
             else nestedHSliderRef.current.slickPause();
         }
-        // Включаем autoplay для вертикального слайдера, только если его родительский баннер активен
         if (nestedVSliderRef.current) {
             if (currentBannerIndex === 2) nestedVSliderRef.current.slickPlay();
             else nestedVSliderRef.current.slickPause();
         }
-    }, [currentBannerIndex, isMobile]); // Зависит от индекса баннера и режима
+    }, [currentBannerIndex, isMobile]);
 
     // ===============================================================================
-    // useEffect'ы для МОБИЛЬНОЙ версии (не выполняются, если isMobile = false)
+    // useEffect'ы для МОБИЛЬНОЙ версии (НЕ выполняются, если isMobile = false)
     // ===============================================================================
     useEffect(() => {
         if (!isMobile) return; // Пропустить, если НЕ мобильная версия
 
-        // Включаем autoplay для мобильного горизонтального слайдера, только если его родительский баннер активен
+        // Логика автоматического переключения ГЛАВНОГО мобильного слайдера для "простого" баннера
+        // Он будет переключать весь контейнер, а внутренние слайдеры будут работать сами
+        const currentMobileBanner = mainSlidesData[mobileCurrentBannerIndex];
+        let mainMobileTimerId;
+        // Если текущий баннер не является "простым" (т.е. содержит вложенные слайдеры),
+        // то основной слайдер должен переключиться через 4 секунды (время показа вложенных слайдеров)
+        if (currentMobileBanner.type === 'simple') {
+             // Для простых баннеров главный слайдер сам переключает себя через 4 секунды
+             mainMobileTimerId = setTimeout(() => {
+                if (mobileMainSliderRef.current) mobileMainSliderRef.current.slickNext();
+             }, 4000); // 4 секунды для простого баннера
+        } else {
+             // Для баннеров с галереями, мы даем время внутреннему слайдеру прокрутиться
+             // и затем переключаем основной, чтобы дать возможность показать все внутренние картинки.
+             // Здесь мы просто ставим задержку, которая равна времени проигрывания всех внутренних слайдов + запас
+             const totalNestedSlides = currentMobileBanner.nestedSlides.length;
+             if (totalNestedSlides > 0) {
+                 mainMobileTimerId = setTimeout(() => {
+                     if (mobileMainSliderRef.current) mobileMainSliderRef.current.slickNext();
+                 }, totalNestedSlides * 3000 + 1000); // (Кол-во слайдов * время слайда) + запас в 1 секунду
+             } else {
+                 // Если галерея пуста, но баннер типа 'nested', переключаем через 4с
+                 mainMobileTimerId = setTimeout(() => {
+                     if (mobileMainSliderRef.current) mobileMainSliderRef.current.slickNext();
+                 }, 4000);
+             }
+        }
+        
+        // Управление автопроигрыванием ВЛОЖЕННЫХ мобильных слайдеров
+        // Включаются/выключаются в зависимости от активности родительского главного баннера
         if (mobileNestedHSliderRef.current) {
             if (mobileCurrentBannerIndex === 1) mobileNestedHSliderRef.current.slickPlay();
             else mobileNestedHSliderRef.current.slickPause();
         }
-        // Включаем autoplay для мобильного вертикального слайдера, только если его родительский баннер активен
         if (mobileNestedVSliderRef.current) {
             if (mobileCurrentBannerIndex === 2) mobileNestedVSliderRef.current.slickPlay();
             else mobileNestedVSliderRef.current.slickPause();
         }
-    }, [mobileCurrentBannerIndex, isMobile]); // Зависит от индекса баннера и режима
+
+        return () => clearTimeout(mainMobileTimerId); // Очистка главного мобильного таймера
+    }, [mobileCurrentBannerIndex, isMobile]); // Зависит от индекса активного мобильного баннера и режима
 
 
     // ===============================================================================
@@ -146,73 +172,64 @@ const HomePage = () => {
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: true,
-        nextArrow: <NextArrow />, // Кастомные стрелки
-        prevArrow: <PrevArrow />, // Кастомные стрелки
-        autoplay: false, // Отключено, управляется вручную через useEffect
-        afterChange: (index) => setCurrentBannerIndex(index), // Обновляем индекс текущего главного баннера
-        beforeChange: (oldIndex, newIndex) => { // Сбрасываем вложенные слайдеры перед переключением
-            // Если переключаемся на баннер с горизонтальной галереей (индекс 1)
+        nextArrow: <NextArrow />,
+        prevArrow: <PrevArrow />,
+        autoplay: false,
+        afterChange: (index) => setCurrentBannerIndex(index),
+        beforeChange: (oldIndex, newIndex) => {
             if (newIndex === 1 && nestedHSliderRef.current) nestedHSliderRef.current.slickGoTo(0, true);
-            // Если переключаемся на баннер с вертикальной галереей (индекс 2)
             if (newIndex === 2 && nestedVSliderRef.current) nestedVSliderRef.current.slickGoTo(0, true);
         }
     };
 
-    // Настройки для горизонтального вложенного слайдера
     const nestedHorizontalSettings = {
         dots: false,
-        infinite: false, // false, чтобы проигрывался 1 раз
+        infinite: false,
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        autoplay: true, // Включается/выключается через useEffect
-        autoplaySpeed: 3000, // Каждый слайд показывается 3 секунды
+        autoplay: true,
+        autoplaySpeed: 3000,
         afterChange: (index) => {
-            setNestedSlideIndex(index); // Обновляем индекс активного вложенного слайда
-            // Если дошли до последнего слайда, переключаем главный слайдер
-            if (index === mainSlidesData[1].nestedSlides.length - 1) { // mainSlidesData[1] - это баннер с горизонтальной галереей
+            setNestedSlideIndex(index);
+            if (index === mainSlidesData[1].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) mainSliderRef.current.slickNext();
-                }, 3000); // Ждем 3 секунды, затем переключаем главный
+                }, 3000);
             }
         }
     };
 
-    // Настройки для вертикального вложенного слайдера
     const nestedVerticalSettings = {
         dots: false,
-        infinite: false, // false, чтобы проигрывался 1 раз
+        infinite: false,
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        vertical: true,        // Включаем вертикальную прокрутку
-        verticalSwiping: true, // Включаем свайп для вертикальной прокрутки
-        autoplay: true,        // Включается/выключается через useEffect
-        autoplaySpeed: 3000,   // Каждый слайд показывается 3 секунды
+        vertical: true,
+        verticalSwiping: true,
+        autoplay: true,
+        autoplaySpeed: 3000,
         afterChange: (index) => {
-            setNestedVerticalSlideIndex(index); // Обновляем индекс активного вложенного слайда
-            // Если дошли до последнего слайда, переключаем главный слайдер
-            if (index === mainSlidesData[2].nestedSlides.length - 1) { // mainSlidesData[2] - это баннер с вертикальной галереей
+            setNestedVerticalSlideIndex(index);
+            if (index === mainSlidesData[2].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) mainSliderRef.current.slickNext();
-                }, 3000); // Ждем 3 секунды, затем переключаем главный
+                }, 3000);
             }
         }
     };
 
-    // Динамическая высота рамки для ГОРИЗОНТАЛЬНОГО слайдера (десктоп)
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
-
-    // Фиксированные размеры рамки для ВЕРТИКАЛЬНОГО слайдера (десктоп, исходя из 1024x919px картинок + 8px отступа)
-    const FIXED_FRAME_WIDTH = 1024 + 16; // 1024px (ширина фото) + 2 * 8px (отступы)
-    const FIXED_FRAME_HEIGHT = 919 + 16; // 919px (высота фото) + 2 * 8px (отступы)
+    const FIXED_FRAME_WIDTH = 1024 + 16;
+    const FIXED_FRAME_HEIGHT = 919 + 16;
 
     // ===============================================================================
     // Настройки для МОБИЛЬНЫХ слайдеров
     // ===============================================================================
-    // Настройки для ГЛАВНОГО мобильного слайдера
+    // Настройки для ГЛАВНОГО мобильного слайдера (теперь с автопрокруткой!)
     const mobileMainSliderSettings = {
         dots: true,
         infinite: true,
@@ -220,39 +237,36 @@ const HomePage = () => {
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        autoplay: false, // Главный мобильный слайдер не проигрывается сам
-        afterChange: (index) => setMobileCurrentBannerIndex(index), // Обновляем индекс активного главного баннера
+        autoplay: false, // Отключено, управляется вручную через мобильный useEffect
+        afterChange: (index) => setMobileCurrentBannerIndex(index),
     };
 
     // Базовые настройки для ВЛОЖЕННЫХ мобильных слайдеров
     const mobileNestedSliderBaseSettings = {
         dots: false,
-        infinite: true, // Вложенные слайдеры крутятся бесконечно
+        infinite: true,
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        autoplaySpeed: 3000, // Каждая картинка 3 секунды
+        autoplaySpeed: 3000,
     };
 
-    // Настройки для ВЛОЖЕННОГО ГОРИЗОНТАЛЬНОГО мобильного слайдера
     const mobileNestedHorizontalSettings = {
         ...mobileNestedSliderBaseSettings,
-        autoplay: mobileCurrentBannerIndex === 1, // Включается только когда его родитель активен
+        autoplay: mobileCurrentBannerIndex === 1,
     };
 
-    // Настройки для ВЛОЖЕННОГО ВЕРТИКАЛЬНОГО мобильного слайдера
     const mobileNestedVerticalSettings = {
         ...mobileNestedSliderBaseSettings,
         vertical: true,
         verticalSwiping: true,
-        autoplay: mobileCurrentBannerIndex === 2, // Включается только когда его родитель активен
+        autoplay: mobileCurrentBannerIndex === 2,
     };
 
 
     // ===============================================================================
     // 5. Условный рендеринг: Мобильная или Десктопная версия
-    //    - Главное условие, которое определяет, какая версия компонента будет отрисована.
     // ===============================================================================
     if (isMobile) {
         // ===========================================================================
@@ -260,21 +274,18 @@ const HomePage = () => {
         // ===========================================================================
         return (
             <>
-                {/* Фильтр категорий (без изменений) */}
-                <div className="bg-sand border-b border-gray-200"><div className="container mx-auto"><CategoryFilter isHomePage={true} /></div></div>
+                {/* Категории убраны из мобильной версии */}
+                {/* <div className="bg-sand border-b border-gray-200"><div className="container mx-auto"><CategoryFilter isHomePage={true} /></div></div> */}
 
-                {/* Главный мобильный слайдер: значительно упрощен по сравнению с десктопной версией */}
                 <section className="hero-slider-mobile">
                     <Slider ref={mobileMainSliderRef} {...mobileMainSliderSettings}>
                         {mainSlidesData.map((banner, index) => (
                             <div key={banner.id}>
                                 <div className={`flex flex-col items-center justify-center text-center p-6 h-[80vh] ${banner.bgColor}`}>
                                     <div className="w-full h-1/2 flex items-center justify-center mb-4">
-                                        {/* Если баннер "простой", показываем его изображение */}
                                         {banner.type === 'simple' && (
                                             <img src={banner.image} alt={banner.title} className="max-h-full max-w-full object-contain rounded-lg shadow-lg" />
                                         )}
-                                        {/* Если баннер с галереей, рендерим ВЛОЖЕННЫЙ СЛАЙДЕР */}
                                         {banner.type === 'nested-horizontal' && (
                                             <div className="w-full h-full flex items-center justify-center rounded-lg shadow-lg overflow-hidden">
                                                 <Slider ref={mobileNestedHSliderRef} {...mobileNestedHorizontalSettings} className="w-full h-full">
@@ -311,7 +322,6 @@ const HomePage = () => {
                     </Slider>
                 </section>
 
-                {/* Остальные секции страницы (без изменений) */}
                 <MoodboardSection />
                 <section className="py-12"><div className="container mx-auto px-6">{/* ... здесь содержимое вашей секции "Наша история" ... */}</div></section>
                 <ContactFormSection />
