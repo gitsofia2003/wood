@@ -83,6 +83,19 @@ const HomePage = () => {
     const [nestedSlideIndex, setNestedSlideIndex] = useState(0);
     const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
+    // НОВОЕ: Состояние для определения мобильного устройства
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    // НОВОЕ: Хук для отслеживания размера окна
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+
     // useEffect для простого слайда (без изменений)
     useEffect(() => {
         const currentBanner = mainSlidesData[currentBannerIndex];
@@ -97,7 +110,7 @@ const HomePage = () => {
         return () => clearTimeout(timerId);
     }, [currentBannerIndex]);
 
-    // ИЗМЕНЕНО: Этот useEffect теперь отвечает ТОЛЬКО за play и pause. Сброс убран.
+    // useEffect для play/pause вложенных слайдеров (без изменений)
     useEffect(() => {
         if (nestedHSliderRef.current) {
             if (currentBannerIndex === 1) {
@@ -127,13 +140,10 @@ const HomePage = () => {
         prevArrow: <PrevArrow />,
         autoplay: false,
         afterChange: (index) => setCurrentBannerIndex(index),
-        // ИЗМЕНЕНО: Добавляем beforeChange для "фонового" сброса слайдеров
         beforeChange: (oldIndex, newIndex) => {
-            // Если следующий слайд - горизонтальная галерея, сбрасываем ее на 1й кадр
             if (newIndex === 1 && nestedHSliderRef.current) {
-                nestedHSliderRef.current.slickGoTo(0, true); // true = без анимации
+                nestedHSliderRef.current.slickGoTo(0, true);
             }
-            // Если следующий слайд - вертикальная галерея, сбрасываем ее на 1й кадр
             if (newIndex === 2 && nestedVSliderRef.current) {
                 nestedVSliderRef.current.slickGoTo(0, true);
             }
@@ -184,9 +194,21 @@ const HomePage = () => {
         }
     };
 
-    const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
-    const FIXED_FRAME_WIDTH = 1024 + 16;
-    const FIXED_FRAME_HEIGHT = 919 + 16;
+    // НОВОЕ: Отдельные настройки для "вертикального" слайдера на мобильных (он станет горизонтальным)
+    const nestedMobileFriendlySettings = {
+        ...nestedVerticalSettings,
+        vertical: false,
+        verticalSwiping: false,
+    };
+
+    // ИЗМЕНЕНО: Динамическая высота рамки в зависимости от устройства
+    const frameHeight = isMobile
+        ? (nestedSlideIndex === 1 ? 260 : 200)
+        : (nestedSlideIndex === 1 ? 400 : 310);
+
+    // ИЗМЕНЕНО: Убраны константы, размеры будут задаваться классами
+    // const FIXED_FRAME_WIDTH = 1024 + 16;
+    // const FIXED_FRAME_HEIGHT = 919 + 16;
 
     return (
         <>
@@ -199,7 +221,8 @@ const HomePage = () => {
                 <Slider ref={mainSliderRef} {...mainSliderSettings}>
                     {mainSlidesData.map(banner => (
                         <div key={banner.id}>
-                            <div className={`flex flex-col md:flex-row items-center justify-center p-8 md:p-12 h-[85vh] ${banner.bgColor}`}>
+                            {/* ИЗМЕНЕНО: Адаптивная высота блока */}
+                            <div className={`flex flex-col md:flex-row items-center justify-center p-8 md:p-12 min-h-[85vh] md:h-[85vh] ${banner.bgColor}`}>
                                 <div className="w-full md:w-1/3 text-center md:text-left mb-8 md:mb-0">
                                     <h1 className="text-4xl md:text-5xl font-bold text-gray-800">{banner.title}</h1>
                                     <p className="text-lg text-gray-600 mt-4">{banner.subtitle}</p>
@@ -207,18 +230,17 @@ const HomePage = () => {
                                         <Link to="/catalog" state={{ selectedCategory: 'Все товары' }}>Каталог</Link>
                                     </button>
                                 </div>
-                                <div className="w-full md:w-2/3 h-full flex items-center justify-center">
+                                <div className="w-full md:w-2/3 h-full flex items-center justify-center mt-6 md:mt-0">
                                     {banner.type === 'simple' && (
                                         <img src={banner.image} alt={banner.title} className="max-h-full max-w-full object-contain rounded-lg shadow-lg" />
                                     )}
                                     {banner.type === 'nested-horizontal' && (
                                         <div className="flex justify-center items-center h-full w-full">
                                             <div
-                                                className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
+                                                // ИЗМЕНЕНО: Адаптивная ширина вместо фиксированной
+                                                className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center w-full max-w-[340px] mx-auto"
                                                 style={{
-                                                    width: 360,
                                                     height: `${frameHeight}px`,
-                                                    marginLeft: '16px',
                                                     overflow: 'hidden',
                                                     transition: 'height 0.4s ease-in-out'
                                                 }}
@@ -241,25 +263,21 @@ const HomePage = () => {
                                     )}
                                     {banner.type === 'nested-vertical' && (
                                         <div
-                                            className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center"
+                                            // ИЗМЕНЕНО: Адаптивные классы вместо фиксированных размеров в стилях
+                                            className="frame-img bg-white rounded-xl shadow-lg border-4 border-gray-300 flex items-center justify-center overflow-hidden w-full max-w-sm h-96 md:w-[1040px] md:h-[935px] mx-auto"
                                             style={{
-                                                width: `${FIXED_FRAME_WIDTH}px`,
-                                                height: `${FIXED_FRAME_HEIGHT}px`,
-                                                overflow: 'hidden',
                                                 transition: 'width 0.4s ease-in-out, height 0.4s ease-in-out'
                                             }}
                                         >
-                                            <Slider ref={nestedVSliderRef} {...nestedVerticalSettings} className="w-full h-full">
+                                            {/* ИЗМЕНЕНО: Условная передача настроек для мобильных/десктопа */}
+                                            <Slider ref={nestedVSliderRef} {...(isMobile ? nestedMobileFriendlySettings : nestedVerticalSettings)} className="w-full h-full">
                                                 {banner.nestedSlides.map(slide => (
                                                     <div key={slide.id} className="w-full h-full flex items-center justify-center">
                                                         <img
                                                             src={slide.image}
                                                             alt={slide.id}
-                                                            style={{
-                                                                width: '1024px',
-                                                                height: '919px',
-                                                            }}
-                                                            className="object-contain"
+                                                            // ИЗМЕНЕНО: Адаптивные классы вместо стилей
+                                                            className="w-full h-full object-contain"
                                                         />
                                                     </div>
                                                 ))}
