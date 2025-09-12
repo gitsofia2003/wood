@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
 import ContactFormSection from './email';
+import AboutPage from './about';
 
 import MoodboardSection from '../components/MoodboardSection';
 import CategoryFilter from '../components/CategoryFilter';
@@ -328,6 +329,7 @@ const HomePage = () => {
                 </section>
 
                 <MoodboardSection />
+                <AboutPage />
                 <ContactFormSection />
             </>
         );
@@ -392,6 +394,7 @@ const HomePage = () => {
                     </Slider>
                 </section>
                 <MoodboardSection />
+                <AboutPage />
                 <ContactFormSection />
             </>
         );
