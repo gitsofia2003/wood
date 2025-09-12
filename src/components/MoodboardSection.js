@@ -64,18 +64,22 @@ const galleryData = {
 
 // --- ИЗМЕНЕНИЕ ЗДЕСЬ: Обновленный компонент Hotspot ---
 const Hotspot = ({ position, product }) => (
-    // Этот контейнер ПОЯВЛЯЕТСЯ при наведении на родительскую картинку (group-hover)
-    // И сам является группой для всплывающего окна (group/hotspot)
-    <div 
-        className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300 group/hotspot"
+    // Этот контейнер ТЕПЕРЬ виден на мобильных (opacity-100),
+    // скрывается на десктопе (md:opacity-0)
+    // и ПО-ПРЕЖНЕМУ появляется при наведении на десктопе (group-hover:opacity-100)
+    <div
+        // --- ВОТ ЭТА СТРОКА ИЗМЕНЕНА ---
+        className="absolute opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300 group/hotspot"
         style={{ top: position.top, left: position.left, transform: 'translate(-50%, -50%)' }}
     >
         {/* Это сама белая точка, которая видна и мерцает */}
         <div className="w-4 h-4 bg-white rounded-full cursor-pointer flex items-center justify-center">
+            {/* Анимация пинга */}
             <div className="w-6 h-6 bg-white rounded-full animate-ping"></div>
         </div>
 
         {/* Это всплывающее окно, которое ПОЯВЛЯЕТСЯ при наведении на точку (group-hover/hotspot) */}
+        {/* Его логика не менялась, на мобильном оно появится при тапе на точку */}
         <div className="absolute bottom-full mb-2 w-48 bg-white text-gray-800 rounded-lg shadow-xl p-3 opacity-0 group-hover/hotspot:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
             <p className="font-bold text-sm">{product.name}</p>
             <p className="text-xs text-gray-500">{product.size}</p>
