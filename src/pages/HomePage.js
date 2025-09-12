@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
 import ContactFormSection from './email';
-import AboutPage from './about';
 
 import MoodboardSection from '../components/MoodboardSection';
 import CategoryFilter from '../components/CategoryFilter';
@@ -130,25 +129,37 @@ const HomePage = () => {
              }, 4000); // 4 секунды для простого баннера
         } else {
              const totalNestedSlides = currentMobileBanner.nestedSlides.length;
+             // Убедимся, что nestedSlides существует и не пуст, чтобы избежать ошибок
              if (totalNestedSlides > 0) {
                  mainMobileTimerId = setTimeout(() => {
                      if (mobileMainSliderRef.current) mobileMainSliderRef.current.slickNext();
                  }, totalNestedSlides * 3000 + 1000); // (Кол-во слайдов * время слайда) + запас в 1 секунду
              } else {
+                 // Если галерея пуста (не должна быть, но на всякий случай), переключаем через 4с
                  mainMobileTimerId = setTimeout(() => {
                      if (mobileMainSliderRef.current) mobileMainSliderRef.current.slickNext();
-                 }, 4000); // Если галерея пуста, но баннер типа 'nested', переключаем через 4с
+                 }, 4000);
              }
         }
         
         // Управление автопроигрыванием ВЛОЖЕННЫХ мобильных слайдеров
+        // При переключении главного баннера, принудительно сбрасываем вложенный слайдер на первый слайд
+        // и затем запускаем/останавливаем autoplay.
         if (mobileNestedHSliderRef.current) {
-            if (mobileCurrentBannerIndex === 1) mobileNestedHSliderRef.current.slickPlay();
-            else mobileNestedHSliderRef.current.slickPause();
+            if (mobileCurrentBannerIndex === 1) {
+                mobileNestedHSliderRef.current.slickGoTo(0, true); // Сброс на первый слайд
+                mobileNestedHSliderRef.current.slickPlay();
+            } else {
+                mobileNestedHSliderRef.current.slickPause();
+            }
         }
         if (mobileNestedVSliderRef.current) {
-            if (mobileCurrentBannerIndex === 2) mobileNestedVSliderRef.current.slickPlay();
-            else mobileNestedVSliderRef.current.slickPause();
+            if (mobileCurrentBannerIndex === 2) {
+                mobileNestedVSliderRef.current.slickGoTo(0, true); // Сброс на первый слайд
+                mobileNestedVSliderRef.current.slickPlay();
+            } else {
+                mobileNestedVSliderRef.current.slickPause();
+            }
         }
 
         return () => clearTimeout(mainMobileTimerId); // Очистка главного мобильного таймера
@@ -245,14 +256,14 @@ const HomePage = () => {
 
     const mobileNestedHorizontalSettings = {
         ...mobileNestedSliderBaseSettings,
-        autoplay: mobileCurrentBannerIndex === 1,
+        // autoplay: mobileCurrentBannerIndex === 1, // Автоплей будет управляться через slickPlay/slickPause в useEffect
     };
 
     const mobileNestedVerticalSettings = {
         ...mobileNestedSliderBaseSettings,
         vertical: true,
         verticalSwiping: true,
-        autoplay: mobileCurrentBannerIndex === 2,
+        // autoplay: mobileCurrentBannerIndex === 2, // Автоплей будет управляться через slickPlay/slickPause в useEffect
     };
 
 
@@ -265,17 +276,24 @@ const HomePage = () => {
         // ===========================================================================
         return (
             <>
-                {/* Категории убраны из мобильной версии (ЗАКОММЕНТИРОВАНЫ) */}
+                {/* Категории убраны из мобильной версии */}
                 {/* <div className="bg-sand border-b border-gray-200"><div className="container mx-auto"><CategoryFilter isHomePage={true} /></div></div> */}
 
                 <section className="hero-slider-mobile">
                     <Slider ref={mobileMainSliderRef} {...mobileMainSliderSettings}>
-                        {mainSlidesData.map((banner, index) => (
+                        {mainSlidesData.map((banner) => ( // Убрал 'index', так как он не используется
                             <div key={banner.id}>
-                                <div className={`flex flex-col items-center justify-center text-center p-6 h-[80vh] ${banner.bgColor}`}>
-                                    <div className="w-full h-1/2 flex items-center justify-center mb-4">
+                                {/* КОНТЕЙНЕР БАННЕРА: flex-col, h-full, но без жесткой h-[80vh] */}
+                                <div className={`flex flex-col items-center justify-center text-center p-6 h-full min-h-[calc(100vh-100px)] ${banner.bgColor}`}>
+                                    
+                                    {/* КОНТЕЙНЕР ИЗОБРАЖЕНИЯ: теперь гибкий, а не h-1/2 */}
+                                    <div className="w-full flex-grow flex items-center justify-center p-2">
                                         {banner.type === 'simple' && (
-                                            <img src={banner.image} alt={banner.title} className="max-h-full max-w-full object-contain rounded-lg shadow-lg" />
+                                            <img
+                                                src={banner.image}
+                                                alt={banner.title}
+                                                className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg" // Уточнил max-h
+                                            />
                                         )}
                                         {(banner.type === 'nested-horizontal' || banner.type === 'nested-vertical') && (
                                             <div className="w-full h-full flex items-center justify-center rounded-lg shadow-lg overflow-hidden">
@@ -286,15 +304,17 @@ const HomePage = () => {
                                                 >
                                                     {banner.nestedSlides.map(slide => (
                                                         <div key={slide.id} className="w-full h-full flex items-center justify-center">
-                                                            {/* ВОТ ИСПРАВЛЕНИЕ: max-h-full max-w-full object-contain */}
-                                                            <img src={slide.image} alt={slide.id} className="max-h-full max-w-full object-contain" />
+                                                            {/* ИСПРАВЛЕНИЕ СТИЛЕЙ ИЗОБРАЖЕНИЯ ВНУТРИ СЛАЙДЕРА */}
+                                                            <img src={slide.image} alt={slide.id} className="max-h-[60vh] max-w-full object-contain" />
                                                         </div>
                                                     ))}
                                                 </Slider>
                                             </div>
                                         )}
                                     </div>
-                                    <div className="w-full h-1/2 flex flex-col items-center justify-center">
+
+                                    {/* КОНТЕЙНЕР ТЕКСТА: будет занимать оставшееся место */}
+                                    <div className="w-full flex-shrink-0 flex flex-col items-center justify-center mt-4">
                                         <h1 className="text-3xl font-bold text-gray-800">{banner.title}</h1>
                                         <p className="text-md text-gray-600 mt-2">{banner.subtitle}</p>
                                         <button className="mt-5 px-6 py-2 bg-gray-800 text-white font-semibold rounded-md hover:bg-gray-700">
@@ -308,7 +328,6 @@ const HomePage = () => {
                 </section>
 
                 <MoodboardSection />
-                <AboutPage />
                 <ContactFormSection />
             </>
         );
@@ -373,7 +392,6 @@ const HomePage = () => {
                     </Slider>
                 </section>
                 <MoodboardSection />
-                <AboutPage />
                 <ContactFormSection />
             </>
         );
