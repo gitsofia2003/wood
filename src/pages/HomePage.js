@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react'; // Добавлен useCallback
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
 import ContactFormSection from './email';
@@ -10,8 +10,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 // ===================================================================================
-// 1. Компоненты для кастомных стрелок (Используются ТОЛЬКО в десктопной версии)
-//    - Эти стрелки делают навигацию главного слайдера более стильной.
+// 1. Компоненты для кастомных стрелок (ТОЛЬКО для десктопа)
 // ===================================================================================
 function NextArrow(props) {
     const { className, onClick } = props;
@@ -37,89 +36,71 @@ function PrevArrow(props) {
 
 // ===================================================================================
 // 2. Данные для главного слайдера (Используются и в десктопной, и в мобильной версии)
-//    - Содержат информацию о каждом баннере: тип, цвета, заголовки, изображения.
-//    - Для баннеров с галереями (`nested-horizontal`, `nested-vertical`)
-//      мобильная версия будет брать только ПЕРВОЕ изображение из `nestedSlides`.
 // ===================================================================================
 const mainSlidesData = [
     { type: 'simple', id: 'banner1', bgColor: 'bg-blue-100', title: 'Мебель на отлично!', subtitle: 'Всё для учёбы и работы', image: '/images/banner-1-bg.jpg' },
     { type: 'nested-horizontal', id: 'banner2', bgColor: 'bg-orange-100', title: 'Уют в каждой комнате', subtitle: 'Листайте, чтобы увидеть больше', nestedSlides: [{ id: 'b2s1', image: '/images/nested-1.jpg' }, { id: 'b2s2', image: '/images/nested-2.jpg' }, { id: 'b2s3', image: '/images/nested-3.jpg' }] },
-    { type: 'nested-vertical', id: 'banner3', bgColor: 'bg-teal-100', title: 'Новая коллекция', subtitle: 'Вертикальный взгляд на стиль', nestedSlides: [{ id: 'b3s1', image: '/images/nested-vertical-1.jpg' }, { id: 'b3s2', image: '/images/nested-vertical-2.jpg' }, { id: 'b3s3', image: '/images/nested-vertical-3.jpg' }] }
+    { type: 'nested-vertical', id: 'banner3', bgColor: 'bg-teal-100', title: 'Новая коллекция', subtitle: 'Вертикальный взгляд на стиль', nestedSlides: [{ id: 'b3s1', image: '/images/new-vertical-1.jpg' }, { id: 'b3s2', image: '/images/new-vertical-2.jpg' }, { id: 'b3s3', image: '/images/new-vertical-3.jpg' }] }
 ];
 
 // ===================================================================================
 // 3. Кастомный хук `useIsMobile`
-//    - Определяет, является ли текущее устройство мобильным (по ширине экрана).
-//    - Переключается между мобильной и десктопной версиями при изменении размера окна.
 // ===================================================================================
-const useIsMobile = (breakpoint = 768) => { // breakpoint - точка переключения (по умолчанию 768px для MD в Tailwind)
-    const [isMobile, setIsMobile] = useState(false); // Изначально предполагаем десктоп, чтобы избежать "прыжка"
-                                                    // после загрузки на больших экранах.
-
-    // Используем useCallback, чтобы функция handleResize не менялась на каждый рендер.
+const useIsMobile = (breakpoint = 768) => {
+    const [isMobile, setIsMobile] = useState(false);
     const handleResize = useCallback(() => {
         setIsMobile(window.innerWidth < breakpoint);
     }, [breakpoint]);
 
     useEffect(() => {
-        // Устанавливаем начальное значение после монтирования компонента
-        handleResize(); 
+        handleResize();
         window.addEventListener('resize', handleResize);
-        // Очищаем слушатель при размонтировании компонента
         return () => window.removeEventListener('resize', handleResize);
-    }, [handleResize]); // Зависимость от handleResize, которая стабильна благодаря useCallback
+    }, [handleResize]);
 
     return isMobile;
 };
 
 // ===================================================================================
 // 4. Основной компонент HomePage
-//    - Содержит всю логику и JSX для рендеринга главной страницы.
 // ===================================================================================
 const HomePage = () => {
-    // Определяем, мобильное ли устройство, используя наш хук
     const isMobile = useIsMobile();
 
     // ===============================================================================
-    // Хуки и состояния для ДЕСКТОПНОЙ версии (не выполняются, если isMobile = true)
+    // Хуки и состояния для ДЕСКТОПНОЙ версии (НЕ ИСПОЛЬЗУЮТСЯ, если isMobile = true)
     // ===============================================================================
-    const mainSliderRef = useRef(null); // Ref для доступа к методам главного слайдера (slickNext, slickPause и т.д.)
-    const nestedHSliderRef = useRef(null); // Ref для горизонтального вложенного слайдера
-    const nestedVSliderRef = useRef(null); // Ref для вертикального вложенного слайдера
+    const mainSliderRef = useRef(null);
+    const nestedHSliderRef = useRef(null);
+    const nestedVSliderRef = useRef(null);
 
-    const [currentBannerIndex, setCurrentBannerIndex] = useState(0); // Индекс активного главного баннера
-    const [nestedSlideIndex, setNestedSlideIndex] = useState(0);     // Индекс активного слайда в горизонтальной галерее
-    const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0); // Индекс активного слайда в вертикальной галерее
+    const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+    const [nestedSlideIndex, setNestedSlideIndex] = useState(0);
+    const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
-    // Логика автоматического переключения ГЛАВНОГО слайдера для "простого" баннера
-    // Выполняется только если НЕ мобильная версия
     useEffect(() => {
-        if (isMobile) return; // Пропустить, если мобильная версия
+        if (isMobile) return;
         const currentBanner = mainSlidesData[currentBannerIndex];
         let timerId;
         if (currentBanner.type === 'simple') {
             timerId = setTimeout(() => {
                 if (mainSliderRef.current) mainSliderRef.current.slickNext();
-            }, 5000); // Простой баннер показывается 5 секунд
+            }, 5000);
         }
-        return () => clearTimeout(timerId); // Очистка таймера
-    }, [currentBannerIndex, isMobile]); // Зависит от индекса баннера и режима (мобильный/десктоп)
+        return () => clearTimeout(timerId);
+    }, [currentBannerIndex, isMobile]);
 
-    // Логика включения/выключения автопроигрывания ВЛОЖЕННЫХ слайдеров
-    // Выполняется только если НЕ мобильная версия
     useEffect(() => {
-        if (isMobile) return; // Пропустить, если мобильная версия
-        // Включаем autoplay для горизонтального слайдера, только если его родительский баннер активен
+        if (isMobile) return;
         if (nestedHSliderRef.current) {
             if (currentBannerIndex === 1) nestedHSliderRef.current.slickPlay();
             else nestedHSliderRef.current.slickPause();
         }
-        // Включаем autoplay для вертикального слайдера, только если его родительский баннер активен
         if (nestedVSliderRef.current) {
             if (currentBannerIndex === 2) nestedVSliderRef.current.slickPlay();
             else nestedVSliderRef.current.slickPause();
         }
-    }, [currentBannerIndex, isMobile]); // Зависит от индекса баннера и режима
+    }, [currentBannerIndex, isMobile]);
 
     // ===============================================================================
     // Настройки для ДЕСКТОПНЫХ слайдеров (не изменялись)
@@ -131,122 +112,164 @@ const HomePage = () => {
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: true,
-        nextArrow: <NextArrow />, // Кастомные стрелки
-        prevArrow: <PrevArrow />, // Кастомные стрелки
-        autoplay: false, // Отключено, управляется вручную через useEffect
-        afterChange: (index) => setCurrentBannerIndex(index), // Обновляем индекс текущего главного баннера
-        beforeChange: (oldIndex, newIndex) => { // Сбрасываем вложенные слайдеры перед переключением
-            // Если переключаемся на баннер с горизонтальной галереей (индекс 1)
+        nextArrow: <NextArrow />,
+        prevArrow: <PrevArrow />,
+        autoplay: false,
+        afterChange: (index) => setCurrentBannerIndex(index),
+        beforeChange: (oldIndex, newIndex) => {
             if (newIndex === 1 && nestedHSliderRef.current) nestedHSliderRef.current.slickGoTo(0, true);
-            // Если переключаемся на баннер с вертикальной галереей (индекс 2)
             if (newIndex === 2 && nestedVSliderRef.current) nestedVSliderRef.current.slickGoTo(0, true);
         }
     };
 
-    // Настройки для горизонтального вложенного слайдера
     const nestedHorizontalSettings = {
         dots: false,
-        infinite: false, // false, чтобы проигрывался 1 раз
+        infinite: false,
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        autoplay: true, // Включается/выключается через useEffect
-        autoplaySpeed: 3000, // Каждый слайд показывается 3 секунды
+        autoplay: true,
+        autoplaySpeed: 3000,
         afterChange: (index) => {
-            setNestedSlideIndex(index); // Обновляем индекс активного вложенного слайда
-            // Если дошли до последнего слайда, переключаем главный слайдер
-            if (index === mainSlidesData[1].nestedSlides.length - 1) { // mainSlidesData[1] - это баннер с горизонтальной галереей
+            setNestedSlideIndex(index);
+            if (index === mainSlidesData[1].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) mainSliderRef.current.slickNext();
-                }, 3000); // Ждем 3 секунды, затем переключаем главный
+                }, 3000);
             }
         }
     };
 
-    // Настройки для вертикального вложенного слайдера
     const nestedVerticalSettings = {
         dots: false,
-        infinite: false, // false, чтобы проигрывался 1 раз
+        infinite: false,
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: false,
-        vertical: true,        // Включаем вертикальную прокрутку
-        verticalSwiping: true, // Включаем свайп для вертикальной прокрутки
-        autoplay: true,        // Включается/выключается через useEffect
-        autoplaySpeed: 3000,   // Каждый слайд показывается 3 секунды
+        vertical: true,
+        verticalSwiping: true,
+        autoplay: true,
+        autoplaySpeed: 3000,
         afterChange: (index) => {
-            setNestedVerticalSlideIndex(index); // Обновляем индекс активного вложенного слайда
-            // Если дошли до последнего слайда, переключаем главный слайдер
-            if (index === mainSlidesData[2].nestedSlides.length - 1) { // mainSlidesData[2] - это баннер с вертикальной галереей
+            setNestedVerticalSlideIndex(index);
+            if (index === mainSlidesData[2].nestedSlides.length - 1) {
                 setTimeout(() => {
                     if (mainSliderRef.current) mainSliderRef.current.slickNext();
-                }, 3000); // Ждем 3 секунды, затем переключаем главный
+                }, 3000);
             }
         }
     };
 
-    // Динамическая высота рамки для ГОРИЗОНТАЛЬНОГО слайдера (десктоп)
     const frameHeight = nestedSlideIndex === 1 ? 400 : 310;
-
-    // Фиксированные размеры рамки для ВЕРТИКАЛЬНОГО слайдера (десктоп, исходя из 1024x919px картинок + 8px отступа)
-    const FIXED_FRAME_WIDTH = 1024 + 16; // 1024px (ширина фото) + 2 * 8px (отступы)
-    const FIXED_FRAME_HEIGHT = 919 + 16; // 919px (высота фото) + 2 * 8px (отступы)
-
+    const FIXED_FRAME_WIDTH = 1024 + 16;
+    const FIXED_FRAME_HEIGHT = 919 + 16;
 
     // ===============================================================================
     // 5. Условный рендеринг: Мобильная или Десктопная версия
-    //    - Главное условие, которое определяет, какая версия компонента будет отрисована.
     // ===============================================================================
     if (isMobile) {
         // ===========================================================================
         // МОБИЛЬНАЯ ВЕРСИЯ: Упрощенная и оптимизированная для маленьких экранов
         // ===========================================================================
-        const mobileSliderSettings = {
+        // Ref'ы и состояние для мобильного ГЛАВНОГО слайдера
+        const mobileMainSliderRef = useRef(null);
+        const [mobileCurrentBannerIndex, setMobileCurrentBannerIndex] = useState(0);
+
+        // Ref'ы для мобильных ВЛОЖЕННЫХ слайдеров
+        const mobileNestedHSliderRef = useRef(null);
+        const mobileNestedVSliderRef = useRef(null);
+
+        // Настройки для ГЛАВНОГО мобильного слайдера
+        const mobileMainSliderSettings = {
             dots: true,
-            infinite: true, // Бесконечная прокрутка
+            infinite: true,
             speed: 500,
             slidesToShow: 1,
             slidesToScroll: 1,
-            arrows: false,  // Нет стрелок на мобильных
-            autoplay: true, // Автоматическое проигрывание
-            autoplaySpeed: 4000, // Каждый слайд показывается 4 секунды
+            arrows: false,
+            autoplay: false, // Главный мобильный слайдер не проигрывается сам
+            afterChange: (index) => setMobileCurrentBannerIndex(index), // Обновляем индекс активного главного баннера
+        };
+        
+        // Базовые настройки для ВЛОЖЕННЫХ мобильных слайдеров
+        const mobileNestedSliderBaseSettings = {
+            dots: false,
+            infinite: true, // Вложенные слайдеры крутятся бесконечно
+            speed: 500,
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            arrows: false,
+            autoplaySpeed: 3000, // Каждая картинка 3 секунды
+        };
+
+        // Настройки для ВЛОЖЕННОГО ГОРИЗОНТАЛЬНОГО мобильного слайдера
+        const mobileNestedHorizontalSettings = {
+            ...mobileNestedSliderBaseSettings,
+            autoplay: mobileCurrentBannerIndex === 1, // Включается только когда его родитель активен
+        };
+
+        // Настройки для ВЛОЖЕННОГО ВЕРТИКАЛЬНОГО мобильного слайдера
+        const mobileNestedVerticalSettings = {
+            ...mobileNestedSliderBaseSettings,
+            vertical: true,
+            verticalSwiping: true,
+            autoplay: mobileCurrentBannerIndex === 2, // Включается только когда его родитель активен
         };
 
         return (
             <>
-                {/* Фильтр категорий (без изменений) */}
                 <div className="bg-sand border-b border-gray-200"><div className="container mx-auto"><CategoryFilter isHomePage={true} /></div></div>
 
-                {/* Главный мобильный слайдер: значительно упрощен по сравнению с десктопной версией */}
                 <section className="hero-slider-mobile">
-                    <Slider {...mobileSliderSettings}>
-                        {mainSlidesData.map(banner => {
-                            // Для баннеров с галереями берем только первое изображение
-                            const imageSrc = banner.type === 'simple' ? banner.image : banner.nestedSlides[0].image;
-                            return (
-                                <div key={banner.id}>
-                                    {/* Каждый слайд - это вертикальный блок: изображение сверху, текст и кнопка снизу */}
-                                    <div className={`flex flex-col items-center justify-center text-center p-6 h-[80vh] ${banner.bgColor}`}>
-                                        <div className="w-full h-1/2 flex items-center justify-center mb-4">
-                                            <img src={imageSrc} alt={banner.title} className="max-h-full max-w-full object-contain rounded-lg shadow-lg" />
-                                        </div>
-                                        <div className="w-full h-1/2 flex flex-col items-center justify-center">
-                                            <h1 className="text-3xl font-bold text-gray-800">{banner.title}</h1>
-                                            <p className="text-md text-gray-600 mt-2">{banner.subtitle}</p>
-                                            <button className="mt-5 px-6 py-2 bg-gray-800 text-white font-semibold rounded-md hover:bg-gray-700">
-                                                <Link to="/catalog" state={{ selectedCategory: 'Все товары' }}>Каталог</Link>
-                                            </button>
-                                        </div>
+                    {/* Главный мобильный слайдер */}
+                    <Slider ref={mobileMainSliderRef} {...mobileMainSliderSettings}>
+                        {mainSlidesData.map((banner, index) => (
+                            <div key={banner.id}>
+                                <div className={`flex flex-col items-center justify-center text-center p-6 h-[80vh] ${banner.bgColor}`}>
+                                    <div className="w-full h-1/2 flex items-center justify-center mb-4">
+                                        {/* Если баннер "простой", показываем его изображение */}
+                                        {banner.type === 'simple' && (
+                                            <img src={banner.image} alt={banner.title} className="max-h-full max-w-full object-contain rounded-lg shadow-lg" />
+                                        )}
+                                        {/* Если баннер с галереей, рендерим ВЛОЖЕННЫЙ СЛАЙДЕР */}
+                                        {banner.type === 'nested-horizontal' && (
+                                            <div className="w-full h-full flex items-center justify-center rounded-lg shadow-lg overflow-hidden">
+                                                <Slider ref={mobileNestedHSliderRef} {...mobileNestedHorizontalSettings} className="w-full h-full">
+                                                    {banner.nestedSlides.map(slide => (
+                                                        <div key={slide.id} className="w-full h-full flex items-center justify-center">
+                                                            <img src={slide.image} alt={slide.id} className="max-h-full max-w-full object-contain" />
+                                                        </div>
+                                                    ))}
+                                                </Slider>
+                                            </div>
+                                        )}
+                                        {banner.type === 'nested-vertical' && (
+                                            <div className="w-full h-full flex items-center justify-center rounded-lg shadow-lg overflow-hidden">
+                                                <Slider ref={mobileNestedVSliderRef} {...mobileNestedVerticalSettings} className="w-full h-full">
+                                                    {banner.nestedSlides.map(slide => (
+                                                        <div key={slide.id} className="w-full h-full flex items-center justify-center">
+                                                            <img src={slide.image} alt={slide.id} className="max-h-full max-w-full object-contain" />
+                                                        </div>
+                                                    ))}
+                                                </Slider>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="w-full h-1/2 flex flex-col items-center justify-center">
+                                        <h1 className="text-3xl font-bold text-gray-800">{banner.title}</h1>
+                                        <p className="text-md text-gray-600 mt-2">{banner.subtitle}</p>
+                                        <button className="mt-5 px-6 py-2 bg-gray-800 text-white font-semibold rounded-md hover:bg-gray-700">
+                                            <Link to="/catalog" state={{ selectedCategory: 'Все товары' }}>Каталог</Link>
+                                        </button>
                                     </div>
                                 </div>
-                            );
-                        })}
+                            </div>
+                        ))}
                     </Slider>
                 </section>
 
-                {/* Остальные секции страницы (без изменений) */}
                 <MoodboardSection />
                 <section className="py-12"><div className="container mx-auto px-6">{/* ... здесь содержимое вашей секции "Наша история" ... */}</div></section>
                 <ContactFormSection />
