@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
 import ContactFormSection from './email';
+import AboutPage from './about';
 
 import MoodboardSection from '../components/MoodboardSection';
 import CategoryFilter from '../components/CategoryFilter';
@@ -323,7 +324,7 @@ const HomePage = () => {
                 </section>
 
                 <MoodboardSection />
-                <section className="py-12"><div className="container mx-auto px-6">{/* ... здесь содержимое вашей секции "Наша история" ... */}</div></section>
+                <AboutPage />
                 <ContactFormSection />
             </>
         );
@@ -388,7 +389,7 @@ const HomePage = () => {
                     </Slider>
                 </section>
                 <MoodboardSection />
-                <section className="py-16 md:py-24"><div className="container mx-auto px-6">{/* ... здесь содержимое вашей секции "Наша история" ... */}</div></section>
+                <AboutPage />
                 <ContactFormSection />
             </>
         );
