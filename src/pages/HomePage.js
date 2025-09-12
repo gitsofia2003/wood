@@ -41,7 +41,7 @@ function PrevArrow(props) {
 const mainSlidesData = [
     { type: 'simple', id: 'banner1', bgColor: 'bg-blue-100', title: 'Мебель на отлично!', subtitle: 'Всё для учёбы и работы', image: '/images/banner-1-bg.jpg' },
     { type: 'nested-horizontal', id: 'banner2', bgColor: 'bg-orange-100', title: 'Уют в каждой комнате', subtitle: 'Листайте, чтобы увидеть больше', nestedSlides: [{ id: 'b2s1', image: '/images/nested-1.jpg' }, { id: 'b2s2', image: '/images/nested-2.jpg' }, { id: 'b2s3', image: '/images/nested-3.jpg' }] },
-    { type: 'nested-vertical', id: 'banner3', bgColor: 'bg-teal-100', title: 'Новая коллекция', subtitle: 'Вертикальный взгляд на стиль', nestedSlides: [{ id: 'b3s1', image: '/images/new-vertical-1.jpg' }, { id: 'b3s2', image: '/images/new-vertical-2.jpg' }, { id: 'b3s3', image: '/images/new-vertical-3.jpg' }] }
+    { type: 'nested-vertical', id: 'banner3', bgColor: 'bg-teal-100', title: 'Новая коллекция', subtitle: 'Вертикальный взгляд на стиль', nestedSlides: [{ id: 'b3s1', image: '/images/nested-vertical-1.jpg' }, { id: 'b3s2', image: '/images/nested-vertical-2.jpg' }, { id: 'b3s3', image: '/images/nested-vertical-3.jpg' }] }
 ];
 
 // ===================================================================================
@@ -120,36 +120,28 @@ const HomePage = () => {
     useEffect(() => {
         if (!isMobile) return; // Пропустить, если НЕ мобильная версия
 
-        // Логика автоматического переключения ГЛАВНОГО мобильного слайдера для "простого" баннера
-        // Он будет переключать весь контейнер, а внутренние слайдеры будут работать сами
         const currentMobileBanner = mainSlidesData[mobileCurrentBannerIndex];
         let mainMobileTimerId;
-        // Если текущий баннер не является "простым" (т.е. содержит вложенные слайдеры),
-        // то основной слайдер должен переключиться через 4 секунды (время показа вложенных слайдеров)
+        
+        // Логика переключения главного мобильного баннера
         if (currentMobileBanner.type === 'simple') {
-             // Для простых баннеров главный слайдер сам переключает себя через 4 секунды
              mainMobileTimerId = setTimeout(() => {
                 if (mobileMainSliderRef.current) mobileMainSliderRef.current.slickNext();
              }, 4000); // 4 секунды для простого баннера
         } else {
-             // Для баннеров с галереями, мы даем время внутреннему слайдеру прокрутиться
-             // и затем переключаем основной, чтобы дать возможность показать все внутренние картинки.
-             // Здесь мы просто ставим задержку, которая равна времени проигрывания всех внутренних слайдов + запас
              const totalNestedSlides = currentMobileBanner.nestedSlides.length;
              if (totalNestedSlides > 0) {
                  mainMobileTimerId = setTimeout(() => {
                      if (mobileMainSliderRef.current) mobileMainSliderRef.current.slickNext();
                  }, totalNestedSlides * 3000 + 1000); // (Кол-во слайдов * время слайда) + запас в 1 секунду
              } else {
-                 // Если галерея пуста, но баннер типа 'nested', переключаем через 4с
                  mainMobileTimerId = setTimeout(() => {
                      if (mobileMainSliderRef.current) mobileMainSliderRef.current.slickNext();
-                 }, 4000);
+                 }, 4000); // Если галерея пуста, но баннер типа 'nested', переключаем через 4с
              }
         }
         
         // Управление автопроигрыванием ВЛОЖЕННЫХ мобильных слайдеров
-        // Включаются/выключаются в зависимости от активности родительского главного баннера
         if (mobileNestedHSliderRef.current) {
             if (mobileCurrentBannerIndex === 1) mobileNestedHSliderRef.current.slickPlay();
             else mobileNestedHSliderRef.current.slickPause();
@@ -230,7 +222,6 @@ const HomePage = () => {
     // ===============================================================================
     // Настройки для МОБИЛЬНЫХ слайдеров
     // ===============================================================================
-    // Настройки для ГЛАВНОГО мобильного слайдера (теперь с автопрокруткой!)
     const mobileMainSliderSettings = {
         dots: true,
         infinite: true,
@@ -242,7 +233,6 @@ const HomePage = () => {
         afterChange: (index) => setMobileCurrentBannerIndex(index),
     };
 
-    // Базовые настройки для ВЛОЖЕННЫХ мобильных слайдеров
     const mobileNestedSliderBaseSettings = {
         dots: false,
         infinite: true,
@@ -275,7 +265,7 @@ const HomePage = () => {
         // ===========================================================================
         return (
             <>
-                {/* Категории убраны из мобильной версии */}
+                {/* Категории убраны из мобильной версии (ЗАКОММЕНТИРОВАНЫ) */}
                 {/* <div className="bg-sand border-b border-gray-200"><div className="container mx-auto"><CategoryFilter isHomePage={true} /></div></div> */}
 
                 <section className="hero-slider-mobile">
@@ -287,22 +277,16 @@ const HomePage = () => {
                                         {banner.type === 'simple' && (
                                             <img src={banner.image} alt={banner.title} className="max-h-full max-w-full object-contain rounded-lg shadow-lg" />
                                         )}
-                                        {banner.type === 'nested-horizontal' && (
+                                        {(banner.type === 'nested-horizontal' || banner.type === 'nested-vertical') && (
                                             <div className="w-full h-full flex items-center justify-center rounded-lg shadow-lg overflow-hidden">
-                                                <Slider ref={mobileNestedHSliderRef} {...mobileNestedHorizontalSettings} className="w-full h-full">
+                                                <Slider
+                                                    ref={banner.type === 'nested-horizontal' ? mobileNestedHSliderRef : mobileNestedVSliderRef}
+                                                    {...(banner.type === 'nested-horizontal' ? mobileNestedHorizontalSettings : mobileNestedVerticalSettings)}
+                                                    className="w-full h-full"
+                                                >
                                                     {banner.nestedSlides.map(slide => (
                                                         <div key={slide.id} className="w-full h-full flex items-center justify-center">
-                                                            <img src={slide.image} alt={slide.id} className="max-h-full max-w-full object-contain" />
-                                                        </div>
-                                                    ))}
-                                                </Slider>
-                                            </div>
-                                        )}
-                                        {banner.type === 'nested-vertical' && (
-                                            <div className="w-full h-full flex items-center justify-center rounded-lg shadow-lg overflow-hidden">
-                                                <Slider ref={mobileNestedVSliderRef} {...mobileNestedVerticalSettings} className="w-full h-full">
-                                                    {banner.nestedSlides.map(slide => (
-                                                        <div key={slide.id} className="w-full h-full flex items-center justify-center">
+                                                            {/* ВОТ ИСПРАВЛЕНИЕ: max-h-full max-w-full object-contain */}
                                                             <img src={slide.image} alt={slide.id} className="max-h-full max-w-full object-contain" />
                                                         </div>
                                                     ))}
