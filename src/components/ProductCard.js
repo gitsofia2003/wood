@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
 
 import "slick-carousel/slick/slick.css"; 
@@ -70,11 +71,12 @@ const ProductCard = ({ product }) => {
     const mainImage = hasImages ? product.images[0] : 'https://via.placeholder.com/300x300.png?text=Фото+нет';
 
     return (
-        <div 
-            className="bg-white group cursor-pointer flex flex-col"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
+        <Link to={`/product/${product.id}`}>
+            <div 
+                className="bg-white group flex flex-col h-full" // убираем cursor-pointer, добавляем h-full
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
             <div className="relative group bg-sand p-2 rounded-md transition-shadow duration-300 group-hover:shadow-xl h-64 flex items-center justify-center overflow-hidden">
                 {discount > 0 && (
                     <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
@@ -114,6 +116,7 @@ const ProductCard = ({ product }) => {
                 <p className="text-sm text-gray-700 font-medium">{product.dimensions}</p>
             </div>
         </div>
+        </Link>
     );
 };
 
