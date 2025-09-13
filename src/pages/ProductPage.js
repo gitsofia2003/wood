@@ -158,11 +158,11 @@ const ProductPage = () => {
                         <div className="flex items-baseline gap-4 my-6">
                             {discount > 0 ? (
                                 <>
-                                    <span className="text-2xl text-gray-400 line-through">{product.originalPrice}</span>
-                                    <span className="text-4xl font-bold text-red-600">{product.price}</span>
+                                    <span className="text-xl text-gray-400 line-through">{product.originalPrice}</span>
+                                    <span className="text-2xl font-bold text-red-600">{product.price}</span>
                                 </>
                             ) : (
-                                <span className="text-4xl font-bold text-gray-800">{product.price}</span>
+                                <span className="text-2xl font-bold text-gray-800">{product.price}</span>
                             )}
                         </div>
                         {product.description && (
@@ -175,7 +175,7 @@ const ProductPage = () => {
                             onClick={() => setIsModalOpen(true)}
                             className="mt-8 w-full py-4 px-8 bg-gray-800 text-white font-semibold rounded-md shadow-md hover:bg-gray-700 transition duration-300"
                         >
-                            Запросить обратный звонок
+                            Запросить звонок
                         </button>
                     </div>
                 </div>
