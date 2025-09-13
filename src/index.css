@@ -151,3 +151,25 @@ body {
   left: 2rem !important;
   right: auto !important;
 }
+
+/* Стили для react-inner-image-zoom */
+.iiz {
+  position: relative;
+  display: inline-block;
+}
+.iiz__img {
+  display: block;
+  width: 100%;
+}
+.iiz__zoom-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.iiz__zoom-img--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
