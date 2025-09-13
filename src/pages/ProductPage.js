@@ -6,6 +6,25 @@ import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
 import CallbackModal from '../components/CallbackModal';
+import ColorFilter from '../components/ColorFilter';
+
+// карта соответствия названия цвета -> hex (пара значений, можно расширить)
+const COLOR_MAP = {
+    "Бежевый": "#F5F5DC",
+    "Черный": "#000000",
+    "Коричневый": "#A52A2A",
+    "Серый": "#808080",
+    "Белый": "#FFFFFF",
+    "Красный": "#FF0000",
+    "Синий": "#0000FF",
+    "Зеленый": "#008000",
+    "Желтый": "#FFFF00",
+    "Розовый": "#FFC0CB",
+    "Фиолетовый": "#800080",
+    "Оранжевый": "#FFA500",
+    "Серебристый": "#C0C0C0",
+    "Золотистый": "#FFD700"
+};
 
 // Компоненты для стрелок остаются без изменений
 function NextArrow(props) {
@@ -149,7 +168,20 @@ const ProductPage = () => {
                     <div className="lg:w-1/4 lg:pl-12">
                         <h1 className="text-4xl font-bold text-gray-800">{product.name}</h1>
                         <p className="text-lg text-gray-500 mt-2">{product.category}</p>
-                        
+
+                        {/* компактный блок цвета (кружок + название) — перед описанием */}
+                        {product.color && (
+                            <div className="mt-3 flex items-center gap-3">
+                                <span className="text-sm text-gray-600">Цвет:</span>
+                                <span
+                                    className="w-4 h-4 rounded-full border"
+                                    style={{ backgroundColor: COLOR_MAP[product.color] || '#E5E7EB' }}
+                                    aria-hidden="true"
+                                />
+                                <span className="text-sm text-gray-700">{product.color}</span>
+                            </div>
+                        )}
+
                         {discount > 0 && (
                             <span className="inline-block bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full mt-4">
                                 Скидка {discount}%
@@ -167,6 +199,7 @@ const ProductPage = () => {
                         </div>
                         {product.description && (
                             <div>
+                                
                                 <h3 className="text-xl font-semibold mb-2">Описание</h3>
                                 <p className="text-gray-600 whitespace-pre-wrap">{product.description}</p>
                             </div>
