@@ -124,8 +124,8 @@ const ProductPage = () => {
                 
                 {/* ИЗМЕНЕНИЕ 2: Меняем пропорции колонок */}
                 <div className="flex flex-col lg:flex-row lg:items-start gap-12">
-                    {/* Левая колонка: Галерея (увеличили до 2/3) */}
-                    <div className="lg:w-2/3 flex gap-4">
+                    {/* Левая колонка: Галерея (75%) */}
+                    <div className="lg:w-3/4 flex gap-4">
                         <div className="w-24 flex-shrink-0">
                             <Slider {...thumbSliderSettings} ref={slider => setThumbSlider(slider)}>
                                 {product.images.map((img, index) => (
@@ -135,19 +135,19 @@ const ProductPage = () => {
                                 ))}
                             </Slider>
                         </div>
-                        <div className="w-full">
+                        <div className="w-full overflow-hidden relative">
                             <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
                                 {product.images.map((img, index) => (
-                                    <div key={index}>
-                                        <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto object-cover rounded-lg"/>
+                                    <div key={index} className="px-2">
+                                        <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto max-h-[70vh] object-contain rounded-lg"/>
                                     </div>
                                 ))}
                             </Slider>
                         </div>
                     </div>
 
-                    {/* Правая колонка: Информация (уменьшили до 1/3) */}
-                    <div className="lg:w-1/3">
+                    {/* Правая колонка: Информация (25%) — сдвинута вправо */}
+                    <div className="lg:w-1/4 lg:pl-12">
                         <h1 className="text-4xl font-bold text-gray-800">{product.name}</h1>
                         <p className="text-lg text-gray-500 mt-2">{product.category}</p>
                         
@@ -184,10 +184,10 @@ const ProductPage = () => {
 
             {/* ИЗМЕНЕНИЕ 3: Уменьшены отступы секции */}
             {similarProducts.length > 0 && (
-                <section className="bg-sand py-10 mt-10">
-                    <div className="container mx-auto px-6">
-                        <h2 className="text-3xl font-bold text-gray-800 text-center mb-8">Похожие товары</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <section className="bg-sand py-6 mt-10">
+                    <div className="container mx-auto px-6 max-w-6xl">
+                        <h2 className="text-3xl font-bold text-gray-800 text-center mb-6">Похожие товары</h2>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {similarProducts.map(p => (
                                 <ProductCard key={p.id} product={p} />
                             ))}

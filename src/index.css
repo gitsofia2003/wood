@@ -136,3 +136,18 @@ body {
     justify-content: center;
     padding: 8px;
 }
+
+/* Ограничить ширину картинок/лайтбокса — не заходят на правую колонку */
+.slick-slider img,
+.slick-slide img {
+  max-width: 75vw;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Если у вас используется react-modal (пример) — ограничить контент модала */
+.ReactModal__Content {
+  max-width: 75vw !important;
+  left: 2rem !important;
+  right: auto !important;
+}
