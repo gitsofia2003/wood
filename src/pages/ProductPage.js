@@ -6,7 +6,6 @@ import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
 import CallbackModal from '../components/CallbackModal';
-import ProductCard from '../components/ProductCard';
 
 // Компоненты для стрелок остаются без изменений
 function NextArrow(props) {
@@ -184,13 +183,34 @@ const ProductPage = () => {
 
             {/* ИЗМЕНЕНИЕ 3: Уменьшены отступы секции */}
             {similarProducts.length > 0 && (
-                <section className="bg-sand py-6 mt-10">
-                    <div className="container mx-auto px-6 max-w-6xl">
+                <section className="bg-sand py-4 mt-8">
+                    <div className="container mx-auto px-6 max-w-4xl">
                         <h2 className="text-3xl font-bold text-gray-800 text-center mb-6">Похожие товары</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {similarProducts.map(p => (
-                                <ProductCard key={p.id} product={p} />
-                            ))}
+
+                        {/* Компактная сетка: только картинка + бейдж скидки */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 justify-items-center">
+                            {similarProducts.map(p => {
+                                const original = p.originalPrice ? parseFloat(String(p.originalPrice).replace(/[^0-9]/g, '')) : 0;
+                                const price = p.price ? parseFloat(String(p.price).replace(/[^0-9]/g, '')) : 0;
+                                const d = original > price ? Math.round(((original - price) / original) * 100) : 0;
+
+                                return (
+                                    <Link key={p.id} to={`/product/${p.id}`} className="block">
+                                        <div className="relative w-36 h-36 rounded-md overflow-hidden bg-white shadow-sm">
+                                            <img
+                                                src={p.images?.[0]}
+                                                alt={p.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            {d > 0 && (
+                                                <span className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                                    -{d}%
+                                                </span>
+                                            )}
+                                        </div>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     </div>
                 </section>
