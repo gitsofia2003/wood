@@ -127,7 +127,7 @@ const ProductPage = () => {
                 </div>
                 
                 {/* Основной блок: Галерея + Информация */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:items-start">
                     {/* Левая колонка: Галерея (шире) */}
                     <div className="lg:col-span-3 flex gap-4">
                         <div className="w-24 flex-shrink-0">
@@ -188,9 +188,9 @@ const ProductPage = () => {
 
             {/* Блок "Похожие товары" */}
             {similarProducts.length > 0 && (
-                <section className="bg-sand py-16 mt-12">
+                <section className="bg-sand py-10 mt-8">
                     <div className="container mx-auto px-6">
-                        <h2 className="text-3xl font-bold text-gray-800 text-center mb-12">Похожие товары</h2>
+                        <h2 className="text-3xl font-bold text-gray-800 text-center mb-8">Похожие товары</h2>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                             {similarProducts.map(p => (
                                 <ProductCard key={p.id} product={p} />
@@ -204,5 +204,27 @@ const ProductPage = () => {
         </>
     );
 };
+
+function NextArrow(props) {
+    const { className, style, onClick } = props;
+    return (
+        <div
+            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
+            style={{ ...style, right: '20px' }}
+            onClick={onClick}
+        ><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></div>
+    );
+}
+
+function PrevArrow(props) {
+    const { className, style, onClick } = props;
+    return (
+        <div
+            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
+            style={{ ...style, left: '20px' }}
+            onClick={onClick}
+        ><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></div>
+    );
+}
 
 export default ProductPage;
