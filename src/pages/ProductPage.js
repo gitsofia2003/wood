@@ -10,7 +10,7 @@ import InnerImageZoom from 'react-inner-image-zoom';
 
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
-import 'react-inner-image-zoom/lib/InnerImageZoom/styles.css';
+import 'react-inner-image-zoom/lib/InnerImageZoom/styles.min.css';
 
 
 // карта соответствия названия цвета -> hex (пара значений, можно расширить)
