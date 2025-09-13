@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom'; // <-- Импортируем из react-router-dom
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
 const Header = ({ user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation(); // <-- Хук для определения текущей страницы
-  const navigate = useNavigate(); // <-- Хук для перенаправления
+  const location = useLocation(); // Этот хук уже есть, он нам и нужен
+  const navigate = useNavigate();
 
   const navLinks = [
     { name: 'Главная', path: '/' },
@@ -18,7 +18,7 @@ const Header = ({ user }) => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate('/'); // Перенаправляем на главную после выхода
+      navigate('/');
     } catch (error) {
       console.error("Ошибка при выходе:", error);
     }
@@ -39,20 +39,27 @@ const Header = ({ user }) => {
                 {link.name}
               </Link>
             ))}
-            {user && (
-                 <button onClick={handleLogout} className="text-red-500 hover:text-red-700">Выйти</button>
+            
+            {/* --- ИЗМЕНЕНИЕ ЗДЕСЬ --- */}
+            {/* Теперь кнопка появится, только если есть user И мы на странице /admin */}
+            {user && location.pathname === '/admin' && (
+                 <button onClick={handleLogout} className="text-red-500 hover:text-red-700 font-semibold">Выйти</button>
             )}
           </nav>
-          <div className="hidden md:block">
-            <a href="tel:+78123364246" className="font-bold text-lg text-gray-800">+7 (812) 336-42-46</a>
-            <p className="text-sm text-gray-500 cursor-pointer">Заказать звонок</p>
-          </div>
+
+          {/* Не показываем телефон, если мы в админ-панели */}
+          {location.pathname !== '/admin' && (
+            <div className="hidden md:block">
+                <a href="tel:+78123364246" className="font-bold text-lg text-gray-800">+7 (812) 336-42-46</a>
+                <p className="text-sm text-gray-500 cursor-pointer">Заказать звонок</p>
+            </div>
+          )}
+
           <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
           </button>
         </div>
       </div>
-      {/* Мобильное меню */}
       {isMenuOpen && (
         <div className="md:hidden px-6 pb-4">
           {/* ... код мобильного меню ... */}
