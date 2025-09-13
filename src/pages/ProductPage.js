@@ -205,26 +205,4 @@ const ProductPage = () => {
     );
 };
 
-function NextArrow(props) {
-    const { className, style, onClick } = props;
-    return (
-        <div
-            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
-            style={{ ...style, right: '20px' }}
-            onClick={onClick}
-        ><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></div>
-    );
-}
-
-function PrevArrow(props) {
-    const { className, style, onClick } = props;
-    return (
-        <div
-            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
-            style={{ ...style, left: '20px' }}
-            onClick={onClick}
-        ><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></div>
-    );
-}
-
 export default ProductPage;
