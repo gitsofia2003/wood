@@ -7,6 +7,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import CallbackModal from '../components/CallbackModal';
 import ColorFilter from '../components/ColorFilter';
+import CategoryFilter from '../components/CategoryFilter';
 
 // карта соответствия названия цвета -> hex (пара значений, можно расширить)
 const COLOR_MAP = {
