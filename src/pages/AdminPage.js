@@ -19,12 +19,12 @@ const AdminPage = () => {
         price: '',
         category: '',
         dimensions: '',
-        color: '',       // Новое поле "Цвет"
-        description: ''  // Новое поле "Описание"
+        color: '',
+        description: ''
     });
-    const [imageFiles, setImageFiles] = useState([]); // Для хранения нескольких файлов
-    const [imagePreviews, setImagePreviews] = useState([]); // для предпросмотра фото
-    const [activeCategory, setActiveCategory] = useState('Все товары'); // Для фильтрации списка
+    const [imageFiles, setImageFiles] = useState([]);
+    const [imagePreviews, setImagePreviews] = useState([]);
+    const [activeCategory, setActiveCategory] = useState('Все товары');
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -41,7 +41,6 @@ const AdminPage = () => {
         fetchProducts();
     }, []);
     
-    // Очистка ссылок для предпросмотра, чтобы избежать утечек памяти
     useEffect(() => {
         return () => {
             imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
@@ -54,26 +53,35 @@ const AdminPage = () => {
     };
 
     const handleFileChange = (e) => {
-        // Очищаем старые превью перед созданием новых
-        imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+        const newFiles = Array.from(e.target.files);
+        if (newFiles.length === 0) return;
 
-        const files = Array.from(e.target.files);
-        setImageFiles(files);
+        const newPreviews = newFiles.map(file => URL.createObjectURL(file));
 
-        const previews = files.map(file => URL.createObjectURL(file));
-        setImagePreviews(previews);
+        setImageFiles(prevFiles => [...prevFiles, ...newFiles]);
+        setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
+        
+        e.target.value = null; 
+    };
+    
+    const handleRemoveImage = (indexToRemove) => {
+        setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
+        setImagePreviews(prevPreviews => {
+            const urlToRemove = prevPreviews[indexToRemove];
+            URL.revokeObjectURL(urlToRemove);
+            return prevPreviews.filter((_, index) => index !== indexToRemove);
+        });
     };
 
     const handleAddProduct = async (e) => {
         e.preventDefault();
         if (imageFiles.length === 0) {
-            alert("Пожалуйста, выберите хотя бы одно изображение.");
+            // alert("Пожалуйста, выберите хотя бы одно изображение.");
             return;
         }
         setIsUploading(true);
         
         try {
-            // 1. Загружаем все фото на ImgBB параллельно
             const uploadPromises = imageFiles.map(file => {
                 const formData = new FormData();
                 formData.append('image', file);
@@ -94,18 +102,26 @@ const AdminPage = () => {
                 throw new Error('Ошибка API ImgBB: ' + result.error.message);
             });
 
-            // 2. Добавляем данные о товаре в Firestore, включая массив ссылок
+            // Форматируем цену
+            let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); 
+            formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; 
+
+            // Форматируем размеры
+            let formattedDimensions = newProduct.dimensions.trim();
+            if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
+                formattedDimensions += ' см';
+            }
+
             await addDoc(collection(db, "products"), {
                 name: newProduct.name,
-                price: newProduct.price,
+                price: formattedPrice,
                 category: newProduct.category,
-                dimensions: newProduct.dimensions,
-                ...(newProduct.color && { color: newProduct.color }), // Добавляем, только если выбрано
-                ...(newProduct.description && { description: newProduct.description }), // Добавляем, только если заполнено
-                images: imageUrls, // Сохраняем массив ссылок
+                dimensions: formattedDimensions,
+                ...(newProduct.color && { color: newProduct.color }),
+                ...(newProduct.description && { description: newProduct.description }),
+                images: imageUrls,
             });
 
-            // Сброс формы
             setNewProduct({ name: '', price: '', category: '', dimensions: '', color: '', description: '' });
             setImageFiles([]);
             setImagePreviews([]);
@@ -125,7 +141,7 @@ const AdminPage = () => {
         if (window.confirm("Вы уверены, что хотите удалить этот товар?")) {
             try {
                 await deleteDoc(doc(db, "products", productId));
-                alert("Товар удален!");
+                // alert("Товар удален!");
                 fetchProducts();
             } catch (error) {
                 console.error("Ошибка при удалении товара: ", error);
@@ -133,7 +149,6 @@ const AdminPage = () => {
         }
     };
 
-    // --- ЛОГИКА ФИЛЬТРАЦИИ ---
     const filteredProducts = products.filter(product => {
         if (activeCategory === 'Все товары') return true;
         return product.category === activeCategory;
@@ -143,12 +158,11 @@ const AdminPage = () => {
         <div className="container mx-auto px-6 py-12">
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
 
-            {/* --- ФОРМА ДОБАВЛЕНИЯ ТОВАРА --- */}
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
                 <h2 className="text-2xl font-semibold mb-4">Добавить новый товар</h2>
                 <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара" required className="p-2 border rounded"/>
-                    <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена (например, 15 200 ₽)" required className="p-2 border rounded"/>
+                    <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена (например, 15200)" required className="p-2 border rounded"/>
                     
                     <select name="category" value={newProduct.category} onChange={handleInputChange} required className="p-2 border rounded">
                         <option value="" disabled>Выберите категорию</option>
@@ -157,7 +171,7 @@ const AdminPage = () => {
                         ))}
                     </select>
 
-                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (например, 45 x 50 x 95 см)" required className="p-2 border rounded"/>
+                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (например, 45 x 50 x 95)" required className="p-2 border rounded"/>
 
                     <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded">
                         <option value="">Цвет (необязательно)</option>
@@ -170,11 +184,20 @@ const AdminPage = () => {
                     
                     <div className="md:col-span-2">
                         <label className="block mb-2 text-sm font-medium">Фотографии товара (можно выбрать несколько)</label>
-                        <input id="image-upload" type="file" onChange={handleFileChange} required multiple className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"/>
+                        <input id="image-upload" type="file" onChange={handleFileChange} multiple className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"/>
                         {imagePreviews.length > 0 && (
                             <div className="mt-4 flex flex-wrap gap-4">
                                 {imagePreviews.map((preview, index) => (
-                                    <img key={index} src={preview} alt={`Предпросмотр ${index + 1}`} className="w-24 h-24 object-cover rounded-md border"/>
+                                    <div key={index} className="relative">
+                                        <img src={preview} alt={`Предпросмотр ${index + 1}`} className="w-24 h-24 object-cover rounded-md border"/>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => handleRemoveImage(index)}
+                                            className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold leading-none hover:bg-red-700 transition-colors"
+                                        >
+                                            &times;
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -186,7 +209,6 @@ const AdminPage = () => {
                 </form>
             </div>
 
-            {/* --- СПИСОК ТОВАРОВ --- */}
             <div>
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
                 <div className="mb-6">
