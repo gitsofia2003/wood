@@ -127,9 +127,10 @@ const ProductPage = () => {
                 </div>
                 
                 {/* Основной блок: Галерея + Информация */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:items-start">
-                    {/* Левая колонка: Галерея (шире) */}
-                    <div className="lg:col-span-3 flex gap-4">
+                {/* --- ИЗМЕНЕНИЕ ЗДЕСЬ: Используем Flexbox вместо Grid --- */}
+                <div className="flex flex-col lg:flex-row lg:items-start gap-12">
+                    {/* Левая колонка: Галерея (задаем ей 60% ширины) */}
+                    <div className="lg:w-3/5 flex gap-4">
                         <div className="w-24 flex-shrink-0">
                             <Slider {...thumbSliderSettings} ref={thumbSlider}>
                                 {product.images.map((img, index) => (
@@ -150,8 +151,8 @@ const ProductPage = () => {
                         </div>
                     </div>
 
-                    {/* Правая колонка: Информация (уже) */}
-                    <div className="lg:col-span-2">
+                    {/* Правая колонка: Информация (задаем ей 40% ширины) */}
+                    <div className="lg:w-2/5">
                         <h1 className="text-4xl font-bold text-gray-800">{product.name}</h1>
                         <p className="text-lg text-gray-500 mt-2">{product.category}</p>
                         
@@ -186,11 +187,11 @@ const ProductPage = () => {
                 </div>
             </main>
 
-            {/* Блок "Похожие товары" */}
+            {/* --- ИЗМЕНЕНИЕ ЗДЕСЬ: Дополнительно уменьшены отступы --- */}
             {similarProducts.length > 0 && (
-                <section className="bg-sand py-10 mt-8">
+                <section className="bg-sand py-8 mt-6">
                     <div className="container mx-auto px-6">
-                        <h2 className="text-3xl font-bold text-gray-800 text-center mb-8">Похожие товары</h2>
+                        <h2 className="text-3xl font-bold text-gray-800 text-center mb-6">Похожие товары</h2>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                             {similarProducts.map(p => (
                                 <ProductCard key={p.id} product={p} />
