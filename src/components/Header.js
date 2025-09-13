@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
+import Logo from './Logo';
 
 const Header = ({ user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -34,7 +35,15 @@ const Header = ({ user }) => {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* --- ИЗМЕНЕНИЕ: Заменяем название на "Полиформа" --- */}
-          <Link to="/" className="text-2xl font-bold text-gray-800 tracking-wider">ПОЛИФОРМА</Link>
+          <Link to="/" className="flex items-center gap-x-3">
+              {/* Графическая часть логотипа, делаем ее поменьше */}
+              <Logo width="50" /> 
+              
+              {/* Текстовая часть логотипа */}
+              <span className="text-2xl font-bold text-gray-800 tracking-wider">
+                  ПОЛИФОРМА
+              </span>
+          </Link>
 
           {/* --- Десктопная навигация --- */}
           <nav className="hidden md:flex items-center space-x-8">

@@ -1,4 +1,5 @@
 import React from 'react';
+import Logo from './Logo';
 
 // Компонент-обертка для иконок (без изменений)
 const SocialIcon = ({ href, className = '', children }) => (
@@ -21,10 +22,16 @@ const Footer = () => (
                 
                 {/* КОЛОНКА 1: Логотип (обновлено название) */}
                 <div className="col-span-2 lg:col-span-1">
-                    <a href="#!" className="text-2xl font-bold text-gray-800 tracking-wider">ПОЛИФОРМА</a>
+                    <a href="#!" className="flex items-center gap-x-3">
+                        {/* Графическая часть, делаем ее маленькой */}
+                        <Logo width="40" />
+                        {/* Текстовая часть */}
+                        <span className="text-xl font-bold text-gray-800 tracking-wider">
+                            ПОЛИФОРМА
+                        </span>
+                    </a>
                     <p className="mt-4 text-sm">© Loft Wood Studio 2019-2025</p>
                 </div>
-
                 {/* КОЛОНКА 2: Каталог */}
                 <div>
                     <h4 className="font-bold text-gray-800 mb-3">Каталог</h4>
