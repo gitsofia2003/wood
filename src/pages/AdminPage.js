@@ -8,6 +8,14 @@ import ColorFilter from '../components/ColorFilter';
 const IMGBB_API_KEY = "a3b4e8feb7a0fba8a78002fdb5304fc0";
 const availableColors = ["Бежевый", "Черный", "Коричневый", "Серый", "Белый", "Красный", "Синий", "Зеленый", "Желтый", "Розовый", "Фиолетовый", "Оранжевый", "Серебристый", "Золотистый"];
 
+const formatNumberWithSpaces = (value) => {
+    if (!value) return '';
+    // 1. Убираем всё, кроме цифр
+    const numericValue = value.replace(/[^0-9]/g, '');
+    // 2. Добавляем пробелы
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
 const AdminPage = () => {
     const [products, setProducts] = useState([]);
     const [newProduct, setNewProduct] = useState({
@@ -55,7 +63,15 @@ const AdminPage = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setNewProduct(prevState => ({ ...prevState, [name]: value }));
+        
+        if (name === 'price' || name === 'originalPrice') {
+            // Если это поле цены, форматируем значение
+            const formattedValue = formatNumberWithSpaces(value);
+            setNewProduct(prevState => ({ ...prevState, [name]: formattedValue }));
+        } else {
+            // Для всех остальных полей оставляем как было
+            setNewProduct(prevState => ({ ...prevState, [name]: value }));
+        }
     };
 
     const handleFileChange = (e) => {
@@ -84,8 +100,8 @@ const AdminPage = () => {
         const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '';
         setNewProduct({
             name: product.name || '',
-            price: priceForEdit,
-            originalPrice: originalPriceForEdit,
+            price: formatNumberWithSpaces(priceForEdit),
+            originalPrice: formatNumberWithSpaces(originalPriceForEdit),
             category: product.category || '',
             dimensions: dimensionsForEdit,
             color: product.color || '',
@@ -124,17 +140,21 @@ const AdminPage = () => {
                 setIsUploading(false);
                 return;
             }
-            let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, '');
-            formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽';
+
+            let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); 
+            formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; 
+
             let formattedOriginalPrice = null;
             if (newProduct.originalPrice) {
-                formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-g]/g, '');
+                formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, '');
                 formattedOriginalPrice = new Intl.NumberFormat('ru-RU').format(formattedOriginalPrice) + ' ₽';
             }
+
             let formattedDimensions = newProduct.dimensions.trim();
             if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
                 formattedDimensions += ' см';
             }
+            
             const productData = {
                 name: newProduct.name,
                 price: formattedPrice,
