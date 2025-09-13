@@ -155,26 +155,27 @@ const ProductPage = () => {
                     {/* Левая колонка: Галерея (75%) */}
                     <div className="lg:w-3/4 flex gap-4">
                         <div className="w-24 flex-shrink-0">
-                           <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
+                           <Slider {...thumbSliderSettings} ref={slider => setThumbSlider(slider)}>
                                 {product.images.map((img, index) => (
-                                    <div key={index}>
-                                        {/* --- ИЗМЕНЕНИЕ: Используем новый компонент InnerImageZoom --- */}
-                                        <InnerImageZoom 
-                                            src={img} 
-                                            zoomSrc={img} // Можно указать другую, более крупную картинку для зума
-                                            alt={`${product.name} ${index + 1}`}
-                                            zoomType="hover"
-                                            className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
-                                        />
+                                    <div key={index} className="p-1 cursor-pointer">
+                                        {/* --- ИСПРАВЛЕНИЕ: Здесь ОБЫЧНАЯ КАРТИНКА (БЕЗ ЛУПЫ) --- */}
+                                        <img src={img} alt={`thumbnail ${index + 1}`} className="w-full h-auto object-cover rounded-md border"/>
                                     </div>
                                 ))}
                             </Slider>
                         </div>
                         <div className="w-full overflow-hidden relative">
-                            <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
+                           <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
                                 {product.images.map((img, index) => (
-                                    <div key={index} className="px-2">
-                                        <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto max-h-[70vh] object-contain rounded-lg"/>
+                                    <div key={index}>
+                                        {/* --- ИСПРАВЛЕНИЕ: Здесь КОМПОНЕНТ С ЛУПОЙ --- */}
+                                        <InnerImageZoom 
+                                            src={img} 
+                                            zoomSrc={img}
+                                            alt={`${product.name} ${index + 1}`}
+                                            zoomType="hover"
+                                            className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                                        />
                                     </div>
                                 ))}
                             </Slider>
