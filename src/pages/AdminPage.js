@@ -2,18 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc } from "firebase/firestore";
 
+// --- КОМПОНЕНТЫ И ДАННЫЕ ДЛЯ ФИЛЬТРОВ ---
+import CategoryFilter, { categories } from '../components/CategoryFilter'; // Убедитесь, что путь верный
+
 // --- КОНФИГУРАЦИЯ IMGBB ---
-// Я вставил ваш API ключ
 const IMGBB_API_KEY = "a3b4e8feb7a0fba8a78002fdb5304fc0";
-// ------------------------------------
+
+// --- ДАННЫЕ ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ ---
+const availableColors = ["Бежевый", "Черный", "Коричневый", "Серый", "Белый"];
 
 const AdminPage = () => {
+    // --- СОСТОЯНИЯ КОМПОНЕНТА ---
     const [products, setProducts] = useState([]);
-    const [newProduct, setNewProduct] = useState({ name: '', price: '', category: '', dimensions: '' });
-    const [imageFile, setImageFile] = useState(null);
+    const [newProduct, setNewProduct] = useState({
+        name: '',
+        price: '',
+        category: '',
+        dimensions: '',
+        color: '',       // Новое поле "Цвет"
+        description: ''  // Новое поле "Описание"
+    });
+    const [imageFiles, setImageFiles] = useState([]); // Для хранения нескольких файлов
+    const [imagePreviews, setImagePreviews] = useState([]); // для предпросмотра фото
+    const [activeCategory, setActiveCategory] = useState('Все товары'); // Для фильтрации списка
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
 
+    // --- ФУНКЦИИ ДЛЯ РАБОТЫ С ДАННЫМИ ---
     const fetchProducts = async () => {
         setIsLoading(true);
         const productSnapshot = await getDocs(collection(db, "products"));
@@ -25,6 +40,13 @@ const AdminPage = () => {
     useEffect(() => {
         fetchProducts();
     }, []);
+    
+    // Очистка ссылок для предпросмотра, чтобы избежать утечек памяти
+    useEffect(() => {
+        return () => {
+            imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+        };
+    }, [imagePreviews]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -32,54 +54,68 @@ const AdminPage = () => {
     };
 
     const handleFileChange = (e) => {
-        if (e.target.files[0]) {
-            setImageFile(e.target.files[0]);
-        }
+        // Очищаем старые превью перед созданием новых
+        imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+
+        const files = Array.from(e.target.files);
+        setImageFiles(files);
+
+        const previews = files.map(file => URL.createObjectURL(file));
+        setImagePreviews(previews);
     };
 
     const handleAddProduct = async (e) => {
         e.preventDefault();
-        if (!imageFile) {
-            alert("Пожалуйста, выберите изображение для товара.");
-            return;
-        }
-        if (IMGBB_API_KEY === "ВАШ_API_КЛЮЧ") {
-            alert("Ошибка: не настроен ключ API для загрузки изображений.");
+        if (imageFiles.length === 0) {
+            alert("Пожалуйста, выберите хотя бы одно изображение.");
             return;
         }
         setIsUploading(true);
         
         try {
-            // 1. Загружаем фото в ImgBB
-            const formData = new FormData();
-            formData.append('image', imageFile);
-
-            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                method: 'POST',
-                body: formData,
+            // 1. Загружаем все фото на ImgBB параллельно
+            const uploadPromises = imageFiles.map(file => {
+                const formData = new FormData();
+                formData.append('image', file);
+                return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData,
+                }).then(res => {
+                    if (!res.ok) throw new Error('Ошибка сети при загрузке изображения');
+                    return res.json();
+                });
             });
-            
-            if (!response.ok) {
-                throw new Error('Ошибка загрузки изображения');
-            }
-            
-            const data = await response.json();
-            const imageUrl = data.data.url; // Получаем ссылку на фото
 
-            // 2. Добавляем данные о товаре в Firestore
+            const uploadResults = await Promise.all(uploadPromises);
+            const imageUrls = uploadResults.map(result => {
+                if (result.success) {
+                    return result.data.url;
+                }
+                throw new Error('Ошибка API ImgBB: ' + result.error.message);
+            });
+
+            // 2. Добавляем данные о товаре в Firestore, включая массив ссылок
             await addDoc(collection(db, "products"), {
-                ...newProduct,
-                image: imageUrl,
+                name: newProduct.name,
+                price: newProduct.price,
+                category: newProduct.category,
+                dimensions: newProduct.dimensions,
+                ...(newProduct.color && { color: newProduct.color }), // Добавляем, только если выбрано
+                ...(newProduct.description && { description: newProduct.description }), // Добавляем, только если заполнено
+                images: imageUrls, // Сохраняем массив ссылок
             });
 
-            setNewProduct({ name: '', price: '', category: '', dimensions: '' });
-            setImageFile(null);
+            // Сброс формы
+            setNewProduct({ name: '', price: '', category: '', dimensions: '', color: '', description: '' });
+            setImageFiles([]);
+            setImagePreviews([]);
             document.getElementById('image-upload').value = null;
+            
             alert("Товар успешно добавлен!");
             fetchProducts();
         } catch (error) {
             console.error("Ошибка при добавлении товара: ", error);
-            alert("Произошла ошибка. Попробуйте снова.");
+            alert("Произошла ошибка при добавлении товара. Подробности в консоли.");
         } finally {
             setIsUploading(false);
         }
@@ -97,33 +133,71 @@ const AdminPage = () => {
         }
     };
 
+    // --- ЛОГИКА ФИЛЬТРАЦИИ ---
+    const filteredProducts = products.filter(product => {
+        if (activeCategory === 'Все товары') return true;
+        return product.category === activeCategory;
+    });
+
     return (
         <div className="container mx-auto px-6 py-12">
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
+
+            {/* --- ФОРМА ДОБАВЛЕНИЯ ТОВАРА --- */}
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
                 <h2 className="text-2xl font-semibold mb-4">Добавить новый товар</h2>
                 <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара" required className="p-2 border rounded"/>
                     <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена (например, 15 200 ₽)" required className="p-2 border rounded"/>
-                    <input name="category" value={newProduct.category} onChange={handleInputChange} placeholder="Категория (например, Стулья)" required className="p-2 border rounded"/>
+                    
+                    <select name="category" value={newProduct.category} onChange={handleInputChange} required className="p-2 border rounded">
+                        <option value="" disabled>Выберите категорию</option>
+                        {categories.filter(c => c.value !== 'Все товары').map(cat => (
+                            <option key={cat.value} value={cat.value}>{cat.name}</option>
+                        ))}
+                    </select>
+
                     <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (например, 45 x 50 x 95 см)" required className="p-2 border rounded"/>
+
+                    <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded">
+                        <option value="">Цвет (необязательно)</option>
+                        {availableColors.map(color => (
+                            <option key={color} value={color}>{color}</option>
+                        ))}
+                    </select>
+
+                    <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание товара (необязательно)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
+                    
                     <div className="md:col-span-2">
-                        <label className="block mb-2 text-sm font-medium">Фотография товара</label>
-                        <input id="image-upload" type="file" onChange={handleFileChange} required className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"/>
+                        <label className="block mb-2 text-sm font-medium">Фотографии товара (можно выбрать несколько)</label>
+                        <input id="image-upload" type="file" onChange={handleFileChange} required multiple className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"/>
+                        {imagePreviews.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-4">
+                                {imagePreviews.map((preview, index) => (
+                                    <img key={index} src={preview} alt={`Предпросмотр ${index + 1}`} className="w-24 h-24 object-cover rounded-md border"/>
+                                ))}
+                            </div>
+                        )}
                     </div>
+                    
                     <button type="submit" disabled={isUploading} className="md:col-span-2 w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400">
                         {isUploading ? 'Загрузка...' : 'Добавить товар'}
                     </button>
                 </form>
             </div>
+
+            {/* --- СПИСОК ТОВАРОВ --- */}
             <div>
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
+                <div className="mb-6">
+                    <CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+                </div>
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-4">
-                        {products.map(product => (
+                        {filteredProducts.length > 0 ? filteredProducts.map(product => (
                             <div key={product.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <div className="flex items-center gap-4">
-                                    <img src={product.image} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white"/>
+                                    <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white"/>
                                     <div>
                                         <p className="font-bold">{product.name}</p>
                                         <p className="text-sm text-gray-600">{product.category} - {product.price}</p>
@@ -133,7 +207,7 @@ const AdminPage = () => {
                                     <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
                                 </div>
                             </div>
-                        ))}
+                        )) : <p>В этой категории пока нет товаров.</p>}
                     </div>
                 )}
             </div>

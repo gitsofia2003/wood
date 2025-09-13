@@ -18,7 +18,7 @@ const CategoryIcon = ({ type }) => {
 };
 
 // Данные для фильтра
-const categories = [
+export const categories = [
     { name: 'Все товары', value: 'Все товары' },
     { name: 'Стулья', value: 'Стулья', icon: 'Chairs' },
     { name: 'Столы', value: 'Столы', icon: 'Tables' },
