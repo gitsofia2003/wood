@@ -1,36 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore"; // Импортируем updateDoc
 
-// --- КОМПОНЕНТЫ И ДАННЫЕ ДЛЯ ФИЛЬТРОВ ---
 import CategoryFilter, { categories } from '../components/CategoryFilter';
-import ColorFilter from '../components/ColorFilter'; // Импортируем новый компонент
+import ColorFilter from '../components/ColorFilter';
 
-// --- КОНФИГУРАЦИЯ IMGBB ---
 const IMGBB_API_KEY = "a3b4e8feb7a0fba8a78002fdb5304fc0";
-
-// --- ДАННЫЕ ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ И ФИЛЬТРОВ ---
 const availableColors = ["Бежевый", "Черный", "Коричневый", "Серый", "Белый", "Красный", "Синий", "Зеленый", "Желтый", "Розовый", "Фиолетовый", "Оранжевый", "Серебристый", "Золотистый"];
 
 const AdminPage = () => {
-    // --- СОСТОЯНИЯ КОМПОНЕНТА ---
     const [products, setProducts] = useState([]);
     const [newProduct, setNewProduct] = useState({
-        name: '',
-        price: '',
-        category: '',
-        dimensions: '',
-        color: '',
-        description: ''
+        name: '', price: '', category: '', dimensions: '', color: '', description: ''
     });
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
     const [activeCategory, setActiveCategory] = useState('Все товары');
-    const [activeColor, setActiveColor] = useState('Все цвета'); // Новое состояние для фильтра по цвету
+    const [activeColor, setActiveColor] = useState('Все цвета');
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
 
-    // --- ФУНКЦИИ ДЛЯ РАБОТЫ С ДАННЫМИ ---
+    // --- ИЗМЕНЕНИЕ: Состояние для режима редактирования ---
+    const [editingProduct, setEditingProduct] = useState(null); // null - режим добавления, объект - режим редактирования
+
     const fetchProducts = async () => {
         setIsLoading(true);
         const productSnapshot = await getDocs(collection(db, "products"));
@@ -45,7 +37,12 @@ const AdminPage = () => {
     
     useEffect(() => {
         return () => {
-            imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+            imagePreviews.forEach(preview => {
+                // Убираем 'blob:' чтобы не было ошибки при очистке URL из Firebase
+                if (preview.startsWith('blob:')) {
+                    URL.revokeObjectURL(preview);
+                }
+            });
         };
     }, [imagePreviews]);
 
@@ -67,40 +64,69 @@ const AdminPage = () => {
     };
     
     const handleRemoveImage = (indexToRemove) => {
-        setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
-        setImagePreviews(prevPreviews => {
-            const urlToRemove = prevPreviews[indexToRemove];
+        // Если превью - это URL из интернета (при редактировании), мы не можем его удалить из состояния файлов
+        const urlToRemove = imagePreviews[indexToRemove];
+        if (urlToRemove.startsWith('blob:')) {
+            // Удаляем только если это новый, еще не загруженный файл
+            const fileIndex = imagePreviews.filter(p => p.startsWith('blob:')).findIndex(p => p === urlToRemove);
+            setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== fileIndex));
             URL.revokeObjectURL(urlToRemove);
-            return prevPreviews.filter((_, index) => index !== indexToRemove);
-        });
+        }
+        
+        setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove));
     };
 
-    const handleAddProduct = async (e) => {
-        e.preventDefault();
-        if (imageFiles.length === 0) {
-            alert("Пожалуйста, выберите хотя бы одно изображение.");
-            return;
-        }
-        setIsUploading(true);
-        
-        try {
-            const uploadPromises = imageFiles.map(file => {
-                const formData = new FormData();
-                formData.append('image', file);
-                return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                    method: 'POST',
-                    body: formData,
-                }).then(res => {
-                    if (!res.ok) throw new Error('Ошибка сети при загрузке изображения');
-                    return res.json();
-                });
-            });
+    // --- ИЗМЕНЕНИЕ: Функция для входа в режим редактирования ---
+    const handleEditClick = (product) => {
+        setEditingProduct(product); // Запоминаем ID и данные редактируемого товара
+        // Убираем ' ₽' и ' см' для удобства редактирования
+        const priceForEdit = product.price ? String(product.price).replace(/[^0-9]/g, '') : '';
+        const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '';
 
-            const uploadResults = await Promise.all(uploadPromises);
-            const imageUrls = uploadResults.map(result => {
-                if (result.success) return result.data.url;
-                throw new Error('Ошибка API ImgBB: ' + result.error.message);
-            });
+        setNewProduct({
+            name: product.name || '',
+            price: priceForEdit,
+            category: product.category || '',
+            dimensions: dimensionsForEdit,
+            color: product.color || '',
+            description: product.description || ''
+        });
+        setImagePreviews(product.images || []); // Показываем текущие фото
+        setImageFiles([]); // Очищаем список новых файлов
+        window.scrollTo(0, 0); // Прокручиваем страницу наверх к форме
+    };
+
+    const cancelEdit = () => {
+        setEditingProduct(null);
+        setNewProduct({ name: '', price: '', category: '', dimensions: '', color: '', description: '' });
+        setImageFiles([]);
+        setImagePreviews([]);
+    };
+
+    // --- ИЗМЕНЕНИЕ: Универсальная функция для добавления/обновления ---
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsUploading(true);
+
+        try {
+            let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : [];
+            // Загружаем только новые файлы (те, что имеют blob: URL)
+            if (imageFiles.length > 0) {
+                const uploadPromises = imageFiles.map(file => {
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData }).then(res => res.json());
+                });
+                const uploadResults = await Promise.all(uploadPromises);
+                const newImageUrls = uploadResults.map(result => result.data.url);
+                imageUrls = [...imageUrls, ...newImageUrls];
+            }
+
+            if (imageUrls.length === 0) {
+                alert("Товар должен иметь хотя бы одно изображение.");
+                setIsUploading(false);
+                return;
+            }
 
             let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); 
             formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; 
@@ -109,8 +135,8 @@ const AdminPage = () => {
             if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
                 formattedDimensions += ' см';
             }
-
-            await addDoc(collection(db, "products"), {
+            
+            const productData = {
                 name: newProduct.name,
                 price: formattedPrice,
                 category: newProduct.category,
@@ -118,17 +144,22 @@ const AdminPage = () => {
                 ...(newProduct.color && { color: newProduct.color }),
                 ...(newProduct.description && { description: newProduct.description }),
                 images: imageUrls,
-            });
+            };
 
-            setNewProduct({ name: '', price: '', category: '', dimensions: '', color: '', description: '' });
-            setImageFiles([]);
-            setImagePreviews([]);
-            document.getElementById('image-upload').value = null;
-            
+            if (editingProduct) {
+                // РЕЖИМ РЕДАКТИРОВАНИЯ: Обновляем существующий документ
+                const productRef = doc(db, "products", editingProduct.id);
+                await updateDoc(productRef, productData);
+            } else {
+                // РЕЖИМ ДОБАВЛЕНИЯ: Создаем новый документ
+                await addDoc(collection(db, "products"), productData);
+            }
+
+            cancelEdit(); // Сбрасываем форму и режим редактирования
             fetchProducts();
         } catch (error) {
-            console.error("Ошибка при добавлении товара: ", error);
-            alert("Произошла ошибка при добавлении товара. Подробности в консоли.");
+            console.error("Ошибка: ", error);
+            alert("Произошла ошибка. Подробности в консоли.");
         } finally {
             setIsUploading(false);
         }
@@ -145,7 +176,6 @@ const AdminPage = () => {
         }
     };
 
-    // Обновленная логика фильтрации по категории и цвету
     const filteredProducts = products.filter(product => {
         const categoryMatch = activeCategory === 'Все товары' || product.category === activeCategory;
         const colorMatch = activeColor === 'Все цвета' || product.color === activeColor;
@@ -157,71 +187,63 @@ const AdminPage = () => {
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
 
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
-                <h2 className="text-2xl font-semibold mb-4">Добавить новый товар</h2>
-                <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* --- ИЗМЕНЕНИЕ: Динамический заголовок и кнопка --- */}
+                <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* ... все поля input, select, textarea остаются такими же ... */}
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара" required className="p-2 border rounded"/>
                     <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена (например, 15200)" required className="p-2 border rounded"/>
-                    
                     <select name="category" value={newProduct.category} onChange={handleInputChange} required className="p-2 border rounded">
                         <option value="" disabled>Выберите категорию</option>
                         {categories.filter(c => c.value !== 'Все товары').map(cat => (
                             <option key={cat.value} value={cat.value}>{cat.name}</option>
                         ))}
                     </select>
-
                     <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (например, 45 x 50 x 95)" required className="p-2 border rounded"/>
-
                     <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded">
                         <option value="">Цвет (необязательно)</option>
                         {availableColors.map(color => (
                             <option key={color} value={color}>{color}</option>
                         ))}
                     </select>
-
                     <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание товара (необязательно)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
                     
                     <div className="md:col-span-2">
-                        <label className="block mb-2 text-sm font-medium">Фотографии товара (можно выбрать несколько)</label>
+                        <label className="block mb-2 text-sm font-medium">Фотографии товара</label>
                         <input id="image-upload" type="file" onChange={handleFileChange} multiple className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"/>
                         {imagePreviews.length > 0 && (
                             <div className="mt-4 flex flex-wrap gap-4">
                                 {imagePreviews.map((preview, index) => (
                                     <div key={index} className="relative">
                                         <img src={preview} alt={`Предпросмотр ${index + 1}`} className="w-24 h-24 object-cover rounded-md border"/>
-                                        <button 
-                                            type="button" 
-                                            onClick={() => handleRemoveImage(index)}
-                                            className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold leading-none hover:bg-red-700 transition-colors"
-                                        >
-                                            &times;
-                                        </button>
+                                        <button type="button" onClick={() => handleRemoveImage(index)} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold leading-none hover:bg-red-700 transition-colors">&times;</button>
                                     </div>
                                 ))}
                             </div>
                         )}
                     </div>
                     
-                    <button type="submit" disabled={isUploading} className="md:col-span-2 w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400">
-                        {isUploading ? 'Загрузка...' : 'Добавить товар'}
-                    </button>
+                    <div className="md:col-span-2 flex items-center gap-4">
+                        <button type="submit" disabled={isUploading} className="w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400">
+                            {isUploading ? 'Загрузка...' : (editingProduct ? 'Сохранить изменения' : 'Добавить товар')}
+                        </button>
+                        {editingProduct && (
+                            <button type="button" onClick={cancelEdit} className="w-full py-3 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+                                Отмена
+                            </button>
+                        )}
+                    </div>
                 </form>
             </div>
 
             <div>
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
-                <div className="mb-6">
-                    <CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
-                </div>
-                <div className="mb-6">
-                    <ColorFilter 
-                        availableColors={availableColors}
-                        activeColor={activeColor}
-                        setActiveColor={setActiveColor}
-                    />
-                </div>
+                <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
+                <div className="mb-6"><ColorFilter availableColors={availableColors} activeColor={activeColor} setActiveColor={setActiveColor} /></div>
+                
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-4">
-                        {filteredProducts.length > 0 ? filteredProducts.map(product => (
+                        {filteredProducts.map(product => (
                             <div key={product.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <div className="flex items-center gap-4">
                                     <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white"/>
@@ -230,11 +252,13 @@ const AdminPage = () => {
                                         <p className="text-sm text-gray-600">{product.category} - {product.price}</p>
                                     </div>
                                 </div>
-                                <div>
+                                {/* --- ИЗМЕНЕНИЕ: Добавляем кнопку Редактировать --- */}
+                                <div className='flex gap-4'>
+                                    <button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button>
                                     <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
                                 </div>
                             </div>
-                        )) : <p>По вашему запросу товаров не найдено.</p>}
+                        ))}
                     </div>
                 )}
             </div>
