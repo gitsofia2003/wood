@@ -26,7 +26,7 @@ const ColorFilter = ({ availableColors, activeColor, setActiveColor }) => {
             {/* Кнопка для сброса фильтра */}
             <button
                 onClick={() => setActiveColor('Все цвета')}
-                className={`flex items-center justify-center w-3 h-3 rounded-full border text-xs font-semibold
+                className={`flex items-center justify-center w-5 h-5 rounded-full border text-xs font-semibold
                     ${activeColor === 'Все цвета' 
                         ? 'ring-2 ring-offset-2 ring-gray-800' 
                         : 'text-gray-500 hover:border-gray-400'
@@ -41,7 +41,7 @@ const ColorFilter = ({ availableColors, activeColor, setActiveColor }) => {
                     key={colorName}
                     onClick={() => setActiveColor(colorName)}
                     title={colorName} // Всплывающая подсказка с названием цвета
-                    className={`w-3 h-3 rounded-full border border-gray-300 transition-transform duration-200 hover:scale-110
+                    className={`w-5 h-5 rounded-full border border-gray-300 transition-transform duration-200 hover:scale-110
                         ${activeColor === colorName ? 'ring-2 ring-offset-2 ring-gray-800' : ''}
                     `}
                     style={{ backgroundColor: colorMap[colorName] || '#FFFFFF' }}
