@@ -31,8 +31,10 @@ const AdminPage = () => {
     const [editingProduct, setEditingProduct] = useState(null);
 
     useEffect(() => {
-        const original = parseFloat(newProduct.originalPrice);
-        const sale = parseFloat(newProduct.price);
+        // Сначала убираем пробелы и все не-цифры, а уже потом считаем
+        const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
+        const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, ''));
+
         if (original > 0 && sale > 0 && original > sale) {
             const calculatedDiscount = Math.round(((original - sale) / original) * 100);
             setDiscount(calculatedDiscount);
@@ -154,7 +156,7 @@ const AdminPage = () => {
             if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
                 formattedDimensions += ' см';
             }
-            
+
             const productData = {
                 name: newProduct.name,
                 price: formattedPrice,
