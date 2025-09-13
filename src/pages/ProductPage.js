@@ -3,11 +3,15 @@ import { useParams, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, limit, getDocs } from 'firebase/firestore';
 import Slider from 'react-slick';
-import "slick-carousel/slick/slick.css"; 
-import "slick-carousel/slick/slick-theme.css";
 import CallbackModal from '../components/CallbackModal';
 import ColorFilter from '../components/ColorFilter';
 import CategoryFilter from '../components/CategoryFilter';
+import InnerImageZoom from 'react-inner-image-zoom';
+
+import "slick-carousel/slick/slick.css"; 
+import "slick-carousel/slick/slick-theme.css";
+import 'react-inner-image-zoom/lib/InnerImageZoom/styles.css';
+
 
 // карта соответствия названия цвета -> hex (пара значений, можно расширить)
 const COLOR_MAP = {
@@ -152,10 +156,17 @@ const ProductPage = () => {
                     {/* Левая колонка: Галерея (75%) */}
                     <div className="lg:w-3/4 flex gap-4">
                         <div className="w-24 flex-shrink-0">
-                            <Slider {...thumbSliderSettings} ref={slider => setThumbSlider(slider)}>
+                           <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
                                 {product.images.map((img, index) => (
-                                    <div key={index} className="p-1 cursor-pointer">
-                                        <img src={img} alt={`thumbnail ${index + 1}`} className="w-full h-auto object-cover rounded-md border"/>
+                                    <div key={index}>
+                                        {/* --- ИЗМЕНЕНИЕ: Используем новый компонент InnerImageZoom --- */}
+                                        <InnerImageZoom 
+                                            src={img} 
+                                            zoomSrc={img} // Можно указать другую, более крупную картинку для зума
+                                            alt={`${product.name} ${index + 1}`}
+                                            zoomType="hover"
+                                            className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                                        />
                                     </div>
                                 ))}
                             </Slider>
