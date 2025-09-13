@@ -1,41 +1,70 @@
 import React, { useState } from 'react';
 import Slider from 'react-slick';
 
-// --- ВАЖНО: Убедитесь, что стили для слайдера подключены ---
-// --- Вы можете добавить эти строки сюда, если их нет в вашем главном файле (App.js или index.js) ---
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
 
+// --- ИЗМЕНЕНИЕ: Компоненты для кастомных стрелок ---
+function NextArrow(props) {
+    const { className, style, onClick } = props;
+    return (
+        <div
+            className={`${className} z-10 w-8 h-8 flex items-center justify-center bg-black bg-opacity-40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+            style={{ ...style, right: '10px' }}
+            onClick={onClick}
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+        </div>
+    );
+}
+
+function PrevArrow(props) {
+    const { className, style, onClick } = props;
+    return (
+        <div
+            className={`${className} z-10 w-8 h-8 flex items-center justify-center bg-black bg-opacity-40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+            style={{ ...style, left: '10px' }}
+            onClick={onClick}
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+        </div>
+    );
+}
+
+
 const ProductCard = ({ product }) => {
-    // Состояние для отслеживания наведения курсора на карточку
     const [isHovered, setIsHovered] = useState(false);
 
-    // Настройки для слайдера
     const sliderSettings = {
-        dots: true, // Показываем точки для навигации
-        infinite: true, // Бесконечный цикл
-        speed: 500, // Скорость анимации
+        dots: true,
+        infinite: true,
+        speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
-        autoplay: isHovered, // Автопроигрывание включается только при наведении
-        autoplaySpeed: 2000, // Задержка между слайдами 2 секунды
-        arrows: false, // Убираем стрелки, чтобы не загромождать карточку
-        fade: true, // Плавное затухание вместо листания
+        autoplay: isHovered,
+        autoplaySpeed: 2000,
+        fade: true,
+        // --- ИЗМЕНЕНИЕ: Включаем стрелки и передаем наши компоненты ---
+        arrows: true,
+        nextArrow: <NextArrow />,
+        prevArrow: <PrevArrow />,
     };
 
-    // Проверяем, есть ли изображения
     const hasImages = product.images && product.images.length > 0;
     const mainImage = hasImages ? product.images[0] : 'https://via.placeholder.com/300x300.png?text=Фото+нет';
 
     return (
-        // Добавляем обработчики наведения на всю карточку
         <div 
             className="bg-white group cursor-pointer flex flex-col"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <div className="bg-sand p-2 rounded-md transition-shadow duration-300 group-hover:shadow-xl h-64 flex items-center justify-center">
-                {/* Если у товара больше одного фото, показываем слайдер */}
+            {/* --- ИЗМЕНЕНИЕ: Добавлены классы relative, group и overflow-hidden --- */}
+            <div className="relative group bg-sand p-2 rounded-md transition-shadow duration-300 group-hover:shadow-xl h-64 flex items-center justify-center overflow-hidden">
                 {hasImages && product.images.length > 1 ? (
                     <Slider {...sliderSettings} className="w-full h-full">
                         {product.images.map((image, index) => (
@@ -45,7 +74,6 @@ const ProductCard = ({ product }) => {
                         ))}
                     </Slider>
                 ) : (
-                    // Если фото одно или их нет, показываем статичную картинку
                     <img src={mainImage} alt={product.name} className="max-w-full max-h-full object-contain"/>
                 )}
             </div>
