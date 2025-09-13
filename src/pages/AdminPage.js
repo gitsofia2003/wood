@@ -3,13 +3,14 @@ import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc } from "firebase/firestore";
 
 // --- КОМПОНЕНТЫ И ДАННЫЕ ДЛЯ ФИЛЬТРОВ ---
-import CategoryFilter, { categories } from '../components/CategoryFilter'; // Убедитесь, что путь верный
+import CategoryFilter, { categories } from '../components/CategoryFilter';
+import ColorFilter from '../components/ColorFilter'; // Импортируем новый компонент
 
 // --- КОНФИГУРАЦИЯ IMGBB ---
 const IMGBB_API_KEY = "a3b4e8feb7a0fba8a78002fdb5304fc0";
 
-// --- ДАННЫЕ ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ ---
-const availableColors = ["Бежевый", "Черный", "Коричневый", "Серый", "Белый"];
+// --- ДАННЫЕ ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ И ФИЛЬТРОВ ---
+const availableColors = ["Бежевый", "Черный", "Коричневый", "Серый", "Белый", "Красный", "Синий", "Зеленый", "Желтый", "Розовый", "Фиолетовый", "Оранжевый", "Серебристый", "Золотистый"];
 
 const AdminPage = () => {
     // --- СОСТОЯНИЯ КОМПОНЕНТА ---
@@ -25,6 +26,7 @@ const AdminPage = () => {
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
     const [activeCategory, setActiveCategory] = useState('Все товары');
+    const [activeColor, setActiveColor] = useState('Все цвета'); // Новое состояние для фильтра по цвету
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -76,7 +78,7 @@ const AdminPage = () => {
     const handleAddProduct = async (e) => {
         e.preventDefault();
         if (imageFiles.length === 0) {
-            // alert("Пожалуйста, выберите хотя бы одно изображение.");
+            alert("Пожалуйста, выберите хотя бы одно изображение.");
             return;
         }
         setIsUploading(true);
@@ -96,17 +98,13 @@ const AdminPage = () => {
 
             const uploadResults = await Promise.all(uploadPromises);
             const imageUrls = uploadResults.map(result => {
-                if (result.success) {
-                    return result.data.url;
-                }
+                if (result.success) return result.data.url;
                 throw new Error('Ошибка API ImgBB: ' + result.error.message);
             });
 
-            // Форматируем цену
             let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); 
             formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; 
 
-            // Форматируем размеры
             let formattedDimensions = newProduct.dimensions.trim();
             if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
                 formattedDimensions += ' см';
@@ -127,7 +125,6 @@ const AdminPage = () => {
             setImagePreviews([]);
             document.getElementById('image-upload').value = null;
             
-            alert("Товар успешно добавлен!");
             fetchProducts();
         } catch (error) {
             console.error("Ошибка при добавлении товара: ", error);
@@ -141,7 +138,6 @@ const AdminPage = () => {
         if (window.confirm("Вы уверены, что хотите удалить этот товар?")) {
             try {
                 await deleteDoc(doc(db, "products", productId));
-                // alert("Товар удален!");
                 fetchProducts();
             } catch (error) {
                 console.error("Ошибка при удалении товара: ", error);
@@ -149,9 +145,11 @@ const AdminPage = () => {
         }
     };
 
+    // Обновленная логика фильтрации по категории и цвету
     const filteredProducts = products.filter(product => {
-        if (activeCategory === 'Все товары') return true;
-        return product.category === activeCategory;
+        const categoryMatch = activeCategory === 'Все товары' || product.category === activeCategory;
+        const colorMatch = activeColor === 'Все цвета' || product.color === activeColor;
+        return categoryMatch && colorMatch;
     });
 
     return (
@@ -214,6 +212,13 @@ const AdminPage = () => {
                 <div className="mb-6">
                     <CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
                 </div>
+                <div className="mb-6">
+                    <ColorFilter 
+                        availableColors={availableColors}
+                        activeColor={activeColor}
+                        setActiveColor={setActiveColor}
+                    />
+                </div>
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-4">
                         {filteredProducts.length > 0 ? filteredProducts.map(product => (
@@ -229,7 +234,7 @@ const AdminPage = () => {
                                     <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
                                 </div>
                             </div>
-                        )) : <p>В этой категории пока нет товаров.</p>}
+                        )) : <p>По вашему запросу товаров не найдено.</p>}
                     </div>
                 )}
             </div>
