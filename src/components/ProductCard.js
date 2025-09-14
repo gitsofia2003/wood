@@ -77,45 +77,44 @@ const ProductCard = ({ product }) => {
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
-            <div className="relative group bg-sand p-2 rounded-md transition-shadow duration-300 group-hover:shadow-xl h-64 flex items-center justify-center overflow-hidden">
-                {discount > 0 && (
-                    <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
-                        -{discount}%
-                    </div>
-                )}
-                
-                {hasImages && product.images.length > 1 ? (
-                    <Slider {...sliderSettings} className="w-full h-full">
-                        {product.images.map((image, index) => (
-                            <div key={index} className="h-64 flex items-center justify-center">
-                                <img src={image} alt={`${product.name} - фото ${index + 1}`} className="max-w-full max-h-full object-contain"/>
-                            </div>
-                        ))}
-                    </Slider>
-                ) : (
-                    <img src={mainImage} alt={product.name} className="max-w-full max-h-full object-contain"/>
-                )}
-            </div>
-            <div className="pt-4 text-center">
-                <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
-                <hr className="my-2 border-gray-200"/>
-
-                <div className="text-xl font-bold text-gray-800 my-2 h-8 flex justify-center items-center">
-                    {discount > 0 ? (
-                        <div className="flex justify-center items-baseline gap-2">
-                            <span className="text-gray-400 line-through text-base font-normal">{product.originalPrice}</span>
-                            <span className="text-red-600">{product.price}</span>
+            {/* --- ИЗМЕНЕНИЕ ЗДЕСЬ: Добавлены префиксы md: --- */}
+                <div className="relative group transition-shadow duration-300 h-64 flex items-center justify-center overflow-hidden md:bg-sand md:p-2 md:rounded-md md:group-hover:shadow-xl">
+                    {discount > 0 && (
+                        <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                            -{discount}%
                         </div>
+                    )}
+                    
+                    {hasImages && product.images.length > 1 ? (
+                        <Slider {...sliderSettings} className="w-full h-full">
+                            {product.images.map((image, index) => (
+                                <div key={index} className="h-64 flex items-center justify-center">
+                                    <img src={image} alt={`${product.name} - фото ${index + 1}`} className="max-w-full max-h-full object-contain"/>
+                                </div>
+                            ))}
+                        </Slider>
                     ) : (
-                        <span>{product.price}</span>
+                        <img src={mainImage} alt={product.name} className="max-w-full max-h-full object-contain"/>
                     )}
                 </div>
-
-                <hr className="my-2 border-gray-200"/>
-                <p className="text-xs text-gray-500 mt-2">габариты Д х Ш х В:</p>
-                <p className="text-sm text-gray-700 font-medium">{product.dimensions}</p>
+                <div className="pt-4 text-center">
+                    <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
+                    <hr className="my-2 border-gray-200"/>
+                    <div className="text-xl font-bold text-gray-800 my-2 h-8 flex justify-center items-center">
+                        {discount > 0 ? (
+                            <div className="flex justify-center items-baseline gap-2">
+                                <span className="text-gray-400 line-through text-base font-normal">{product.originalPrice}</span>
+                                <span className="text-red-600">{product.price}</span>
+                            </div>
+                        ) : (
+                            <span>{product.price}</span>
+                        )}
+                    </div>
+                    <hr className="my-2 border-gray-200"/>
+                    <p className="text-xs text-gray-500 mt-2">габариты Д х Ш х В:</p>
+                    <p className="text-sm text-gray-700 font-medium">{product.dimensions}</p>
+                </div>
             </div>
-        </div>
         </Link>
     );
 };
