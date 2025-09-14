@@ -271,29 +271,32 @@ const HomePage = () => {
     // ===============================================================================
     // 5. Условный рендеринг: Мобильная или Десктопная версия
     // ===============================================================================
+    // CSS-фиксы для мобильного слайдера — центрируем содержимое слайдов
+    const mobileSliderInlineStyles = `
+        /* Центрируем слайды внутри мобильного слайдера */
+        .hero-slider-mobile .slick-slide { display: flex !important; align-items: center !important; justify-content: center !important; }
+        .hero-slider-mobile .slick-slide > div { width: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+        /* Иногда slick-list добавляет overflow/transform — оставим его, но гарантирум центрирование содержимого */
+        .hero-slider-mobile .slick-list { display: block; }
+    `;
+    
     if (isMobile) {
-        // ===========================================================================
-        // МОБИЛЬНАЯ ВЕРСИЯ: Упрощенная и оптимизированная для маленьких экранов
-        // ===========================================================================
         return (
             <>
-                {/* Категории убраны из мобильной версии */}
-                {/* <div className="bg-sand border-b border-gray-200"><div className="container mx-auto"><CategoryFilter isHomePage={true} /></div></div> */}
+                {/* Вставляем локальный стиль только для мобильной версии */}
+                <style>{mobileSliderInlineStyles}</style>
 
                 <section className="hero-slider-mobile">
                     <Slider ref={mobileMainSliderRef} {...mobileMainSliderSettings}>
-                        {mainSlidesData.map((banner) => ( // Убрал 'index', так как он не используется
+                        {mainSlidesData.map((banner) => (
                             <div key={banner.id}>
-                                {/* КОНТЕЙНЕР БАННЕРА: flex-col, h-full, но без жесткой h-[80vh] */}
                                 <div className={`flex flex-col items-center justify-center text-center p-6 h-full min-h-[calc(100vh-100px)] ${banner.bgColor}`}>
-                                    
-                                    {/* КОНТЕЙНЕР ИЗОБРАЖЕНИЯ: теперь гибкий, а не h-1/2 */}
                                     <div className="w-full flex-grow flex items-center justify-center p-2">
                                         {banner.type === 'simple' && (
                                             <img
                                                 src={banner.image}
                                                 alt={banner.title}
-                                                className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg" // Уточнил max-h
+                                                className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg"
                                             />
                                         )}
                                         {(banner.type === 'nested-horizontal' || banner.type === 'nested-vertical') && (
@@ -305,7 +308,6 @@ const HomePage = () => {
                                                 >
                                                     {banner.nestedSlides.map(slide => (
                                                         <div key={slide.id} className="w-full h-full flex items-center justify-center">
-                                                            {/* ИСПРАВЛЕНИЕ СТИЛЕЙ ИЗОБРАЖЕНИЯ ВНУТРИ СЛАЙДЕРА */}
                                                             <img src={slide.image} alt={slide.id} className="max-h-[60vh] max-w-full object-contain mx-auto" />
                                                         </div>
                                                     ))}
@@ -333,7 +335,6 @@ const HomePage = () => {
                 <ContactFormSection />
             </>
         );
-
     } else {
         // ===========================================================================
         // ДЕСКТОПНАЯ ВЕРСИЯ: Ваш оригинальный код (АБСОЛЮТНО НЕ ИЗМЕНЕН)
