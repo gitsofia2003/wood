@@ -306,7 +306,7 @@ const HomePage = () => {
                                                     {banner.nestedSlides.map(slide => (
                                                         <div key={slide.id} className="w-full h-full flex items-center justify-center">
                                                             {/* ИСПРАВЛЕНИЕ СТИЛЕЙ ИЗОБРАЖЕНИЯ ВНУТРИ СЛАЙДЕРА */}
-                                                            <img src={slide.image} alt={slide.id} className="max-h-[60vh] max-w-full object-contain" />
+                                                            <img src={slide.image} alt={slide.id} className="max-h-[60vh] max-w-full object-contain mx-auto" />
                                                         </div>
                                                     ))}
                                                 </Slider>
