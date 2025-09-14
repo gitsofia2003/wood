@@ -41,7 +41,7 @@ const Header = ({ user }) => {
               
               {/* Текстовая часть логотипа */}
               <span className="text-2xl font-bold text-gray-800 tracking-wider">
-                  ПОЛИФОРМА
+                  Elvora
               </span>
           </Link>
 
