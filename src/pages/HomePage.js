@@ -297,7 +297,7 @@ const HomePage = () => {
                                             />
                                         )}
                                         {(banner.type === 'nested-horizontal' || banner.type === 'nested-vertical') && (
-                                            <div className="w-full h-full flex items-center justify-center rounded-lg shadow-lg overflow-hidden">
+                                            <div className="w-full h-full flex items-center justify-center">
                                                 <Slider
                                                     ref={banner.type === 'nested-horizontal' ? mobileNestedHSliderRef : mobileNestedVSliderRef}
                                                     {...(banner.type === 'nested-horizontal' ? mobileNestedHorizontalSettings : mobileNestedVerticalSettings)}
