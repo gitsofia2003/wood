@@ -51,6 +51,8 @@ function PrevArrow(props) {
 }
 
 const ProductPage = () => {
+
+    const [showCategories, setShowCategories] = useState(false);
     const { productId } = useParams();
     const [product, setProduct] = useState(null);
     const [similarProducts, setSimilarProducts] = useState([]);
@@ -139,12 +141,19 @@ const ProductPage = () => {
             </div>
 
             <main className="container mx-auto px-6 py-12">
-                <div className="text-sm text-gray-500 mb-8">
-                    <Link to="/" className="hover:underline">Главная</Link>
-                    <span className="mx-2">/</span>
-                    <Link to="/catalog" className="hover:underline">Каталог</Link>
-                    <span className="mx-2">/</span>
-                    <span className="text-gray-800">{product.name}</span>
+                <div className="lg:hidden mb-4">
+                    <button 
+                        onClick={() => setShowCategories(!showCategories)}
+                        className="w-full text-left font-semibold text-gray-600 p-2 border-b-2"
+                    >
+                        {product.category}
+                        <span className={`float-right transition-transform ${showCategories ? 'rotate-180' : ''}`}>▼</span>
+                    </button>
+                    {showCategories && (
+                        <div className="py-4">
+                            <CategoryFilter isHomePage={true} />
+                        </div>
+                    )}
                 </div>
                 
                 {/* ИЗМЕНЕНИЕ 2: Меняем пропорции колонок */}
