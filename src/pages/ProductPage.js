@@ -134,7 +134,7 @@ const ProductPage = () => {
 
     return (
         <>
-            <div className="bg-sand border-b border-gray-200">
+            <div className="hidden lg:block bg-sand border-b border-gray-200">
                 <div className="container mx-auto">
                     <CategoryFilter isHomePage={true} />
                 </div>
@@ -180,8 +180,64 @@ const ProductPage = () => {
                         </div>
                     </div>
 
-                    {/* Правая колонка: Информация (25%) — сдвинута вправо */}
-                    <div className="lg:w-1/4 lg:pl-12">
+                    {/* Правая колонка: Информация */}
+                    {/* --- MOBILE: отдельный упрощённый порядок (только на экранах < lg) */}
+                    <div className="lg:hidden w-full">
+                        {/* Название + скидка */}
+                        <div className="flex items-start justify-between">
+                            <h1 className="text-3xl font-bold text-gray-800">{product.name}</h1>
+                            {discount > 0 && (
+                                <span className="ml-4 inline-block bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">
+                                    Скидка {discount}%
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Категория + цвет */}
+                        <div className="mt-3 flex items-center gap-3 text-sm text-gray-600">
+                            <span>{product.category}</span>
+                            {product.color && (
+                                <>
+                                    <span
+                                        className="w-3 h-3 rounded-full border"
+                                        style={{ backgroundColor: COLOR_MAP[product.color] || '#E5E7EB' }}
+                                        aria-hidden="true"
+                                    />
+                                    <span className="text-gray-700">{product.color}</span>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Цена */}
+                        <div className="flex items-baseline gap-4 my-4">
+                            {discount > 0 ? (
+                                <>
+                                    <span className="text-lg text-gray-400 line-through">{product.originalPrice}</span>
+                                    <span className="text-2xl font-bold text-red-600">{product.price}</span>
+                                </>
+                            ) : (
+                                <span className="text-2xl font-bold text-gray-800">{product.price}</span>
+                            )}
+                        </div>
+
+                        {/* Описание */}
+                        {product.description && (
+                            <div className="mt-2">
+                                <h3 className="text-xl font-semibold mb-2">Описание</h3>
+                                <p className="text-gray-600 whitespace-pre-wrap">{product.description}</p>
+                            </div>
+                        )}
+
+                        <button 
+                            onClick={() => setIsModalOpen(true)}
+                            className="mt-6 w-full py-4 px-8 bg-gray-800 text-white font-semibold rounded-md shadow-md hover:bg-gray-700 transition duration-300"
+                        >
+                            Запросить звонок
+                        </button>
+                    </div>
+
+                    {/* --- DESKTOP: оригинальный блок (скрыт на мобилке) */}
+                    <div className="hidden lg:block lg:w-1/4 lg:pl-12">
                         <h1 className="text-4xl font-bold text-gray-800">{product.name}</h1>
                         <p className="text-lg text-gray-500 mt-2">{product.category}</p>
 
