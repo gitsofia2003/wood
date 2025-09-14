@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { auth } from './firebase';
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 // Импортируем компоненты и страницы
 import Header from './components/Header';
@@ -18,7 +19,10 @@ const ContactPage = () => <div className="container mx-auto p-8"><h1 className="
 
 // Компонент для защиты админ-панели
 const PrivateRoute = ({ user, children }) => {
-  return user ? children : <Navigate to="/login" />;
+  if (user && user.role === 'admin') {
+    return children;
+  }
+  return <Navigate to="/login" />;
 };
 
 export default function App() {
@@ -26,8 +30,24 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    // --- ИЗМЕНЕНИЕ: Теперь мы также загружаем роль пользователя ---
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // Пользователь вошел. Теперь идем в Firestore за его ролью.
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          // Если документ с ролью найден, добавляем роль к объекту пользователя
+          setUser({ ...currentUser, role: userDocSnap.data().role });
+        } else {
+          // Если документа с ролью нет, это обычный пользователь
+          setUser(currentUser);
+        }
+      } else {
+        // Пользователь вышел
+        setUser(null);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
