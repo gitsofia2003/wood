@@ -341,10 +341,8 @@ const HomePage = () => {
         // ===========================================================================
         return (
             <>
-                <div className="bg-sand border-b border-gray-200">
-                    <div className="container mx-auto">
-                        <CategoryFilter isHomePage={true} />
-                    </div>
+                <div className="bg-sand border-b border-gray-200">          
+                    <CategoryFilter isHomePage={true} />    
                 </div>
                 <section className="hero-slider-complex relative">
                     <Slider ref={mainSliderRef} {...mainSliderSettings}>
