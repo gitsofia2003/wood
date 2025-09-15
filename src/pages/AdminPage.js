@@ -6,7 +6,7 @@ import CategoryFilter, { categories } from '../components/CategoryFilter';
 import MaterialFilter from '../components/MaterialFilter';
 
 const IMGBB_API_KEY = "a3b4e8feb7a0fba8a78002fdb5304fc0";
-const availableColors = ["Вишня", "Бук", "Сандал"];
+const availableMaterials = ["Вишня", "Бук", "Сандал"];
 
 const formatNumberWithSpaces = (value) => {
     if (!value) return '';

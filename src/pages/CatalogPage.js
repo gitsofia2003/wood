@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import { collection, getDocs, query, where } from "firebase/firestore";
 
 // --- ИЗМЕНЕНИЕ: Список цветов, доступных для фильтрации
-const availableColors = ["Вишня", "Бук", "Сандал"];
+const availableMaterials = ["Вишня", "Бук", "Сандал"];
 
 const CatalogPage = () => {
     const location = useLocation();
