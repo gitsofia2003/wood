@@ -33,7 +33,7 @@ const AdminPage = () => {
 
     useEffect(() => {
         const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
-        const sale = parseFloat(String(newProduct.price).replace(/[^0--9]/g, ''));
+        const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, ''));
 
         if (original > 0 && sale > 0 && original > sale) {
             setDiscount(Math.round(((original - sale) / original) * 100));
