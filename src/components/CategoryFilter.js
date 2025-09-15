@@ -13,6 +13,12 @@ const CategoryIcon = ({ type }) => {
         Beds: <path strokeLinecap="round" strokeLinejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />,
         Storage: <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />,
         Lighting: <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />,
+        // ИЗМЕНЕНИЕ 1: Добавляем иконку для тумбы под ТВ
+        TVStand: <>
+            <rect x="2" y="7" width="20" height="11" rx="2" ry="2"></rect>
+            <line x1="6" y1="21" x2="6" y2="18"></line>
+            <line x1="18" y1="21" x2="18" y2="18"></line>
+        </>,
     };
     return <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>{icons[type]}</svg>;
 };
@@ -24,6 +30,14 @@ export const categories = [
     { name: 'Столы', value: 'Столы', icon: 'Tables' },
     { name: 'Диваны', value: 'Диваны', icon: 'Sofas' },
     { name: 'Кресла', value: 'Кресла', icon: 'Armchairs' },
+    // ИЗМЕНЕНИЕ 2: Добавляем новую категорию со специальным стилем для кнопки
+    {
+        name: 'Тумба под ТВ',
+        value: 'Тумба под ТВ',
+        icon: 'TVStand',
+        // Этот стиль применится только к активной кнопке в каталоге
+        activeStyle: 'bg-stone-800 text-white border-stone-800'
+    },
     { name: 'Кровати', value: 'Кровати', icon: 'Beds' },
     { name: 'Хранение', value: 'Хранение', icon: 'Storage' },
     { name: 'Освещение', value: 'Освещение', icon: 'Lighting' },
@@ -35,8 +49,8 @@ const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false 
         ? categories.filter(cat => cat.value !== 'Все товары')
         : categories;
 
-    // На главной странице кнопки будут ссылками
-    // --- ИЗМЕНЕНИЕ ЗДЕСЬ: Новый, более компактный вид для главной страницы ---
+    // --- Логика для главной страницы ---
+    // Здесь ничего не меняем в стилях, только добавляем новую категорию в список
     if (isHomePage) {
         return (
             <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 py-4">
@@ -55,24 +69,30 @@ const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false 
         );
     }
 
-
-    // На странице каталога кнопки остаются кнопками
+    // --- Логика для страницы каталога ---
     return (
         <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {displayedCategories.map(category => (
-                <button
-                    key={category.name}
-                    onClick={() => setActiveCategory(category.value)}
-                    className={`flex items-center justify-center px-4 py-2 text-sm font-semibold border rounded-full transition-colors duration-300
-                        ${activeCategory === category.value
-                            ? 'bg-gray-800 text-white border-gray-800'
-                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
-                        }`}
-                >
-                    {category.icon && <CategoryIcon type={category.icon} />}
-                    <span className={category.icon ? 'ml-2' : ''}>{category.name}</span>
-                </button>
-            ))}
+            {displayedCategories.map(category => {
+                const isActive = activeCategory === category.value;
+                // ИЗМЕНЕНИЕ 3: Определяем стиль для активной кнопки
+                // Если у категории есть свой стиль (activeStyle) - используем его.
+                // Если нет - используем стиль по умолчанию (bg-gray-800).
+                const activeClasses = category.activeStyle || 'bg-gray-800 text-white border-gray-800';
+                const inactiveClasses = 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100 hover:border-gray-400';
+
+                return (
+                    <button
+                        key={category.name}
+                        onClick={() => setActiveCategory(category.value)}
+                        className={`flex items-center justify-center px-4 py-2 text-sm font-semibold border rounded-full transition-colors duration-300
+                            ${isActive ? activeClasses : inactiveClasses}
+                        `}
+                    >
+                        {category.icon && <CategoryIcon type={category.icon} />}
+                        <span className={category.icon ? 'ml-2' : ''}>{category.name}</span>
+                    </button>
+                )
+            })}
         </div>
     );
 };
