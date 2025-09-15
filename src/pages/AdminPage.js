@@ -15,7 +15,6 @@ const formatNumberWithSpaces = (value) => {
 };
 
 const AdminPage = () => {
-    // ... все старые useState без изменений
     const [products, setProducts] = useState([]);
     const [newProduct, setNewProduct] = useState({
         name: '', price: '', originalPrice: '', category: '', dimensions: '', color: '', description: ''
@@ -29,18 +28,14 @@ const AdminPage = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [isDraft, setIsDraft] = useState(false);
-    
-    // ИЗМЕНЕНИЕ 1: Состояния для новой фичи
     const [isBatchUpload, setIsBatchUpload] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
 
-    // ИЗМЕНЕНИЕ 2: Автоматически включаем режим "черновика", если выбрана массовая загрузка
     useEffect(() => {
         if (isBatchUpload) {
             setIsDraft(true);
         }
     }, [isBatchUpload]);
-
 
     useEffect(() => {
         const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
@@ -72,6 +67,7 @@ const AdminPage = () => {
         };
     }, [imagePreviews]);
 
+    // ... handleInputChange, handleFileChange, handleRemoveImage без изменений ...
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         if (name === 'price' || name === 'originalPrice') {
@@ -80,7 +76,6 @@ const AdminPage = () => {
             setNewProduct(prevState => ({ ...prevState, [name]: value }));
         }
     };
-
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);
         if (newFiles.length === 0) return;
@@ -89,7 +84,6 @@ const AdminPage = () => {
         setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
         e.target.value = null;
     };
-
     const handleRemoveImage = (indexToRemove) => {
         const urlToRemove = imagePreviews[indexToRemove];
         if (urlToRemove.startsWith('blob:')) {
@@ -99,6 +93,7 @@ const AdminPage = () => {
         }
         setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove));
     };
+
 
     const handleEditClick = (product) => {
         setEditingProduct(product);
@@ -111,7 +106,7 @@ const AdminPage = () => {
         setImagePreviews(product.images || []);
         setImageFiles([]);
         setIsDraft(product.status === 'draft');
-        setIsBatchUpload(false); // Выключаем массовую загрузку в режиме редактирования
+        setIsBatchUpload(false);
         window.scrollTo(0, 0);
     };
 
@@ -122,49 +117,37 @@ const AdminPage = () => {
         setImagePreviews([]);
         setDiscount(0);
         setIsDraft(false);
-        setIsBatchUpload(false); // Сбрасываем и эту галочку
-        setUploadProgress(''); // И прогресс
+        setIsBatchUpload(false);
+        setUploadProgress('');
     };
 
-    // ИЗМЕНЕНИЕ 3: Выносим логику массовой загрузки в отдельную функцию для чистоты
     const handleBatchSubmit = async () => {
         if (imageFiles.length === 0) {
             alert("Пожалуйста, выберите фотографии для массовой загрузки.");
             return;
         }
-
         setIsUploading(true);
         let createdCount = 0;
-
         try {
             for (let i = 0; i < imageFiles.length; i++) {
                 const file = imageFiles[i];
                 setUploadProgress(`Загрузка ${i + 1} из ${imageFiles.length}...`);
-
-                // Шаг 1: Загружаем фото на хостинг
                 const formData = new FormData();
                 formData.append('image', file);
                 const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
                 const result = await res.json();
                 if (!result.data || !result.data.url) {
                     console.warn(`Не удалось загрузить файл ${file.name}, пропускаем.`);
-                    continue; // Пропускаем этот файл, если он не загрузился
+                    continue;
                 }
                 const imageUrl = result.data.url;
-
-                // Шаг 2: Готовим данные для нового товара-черновика
                 const productData = {
                     name: newProduct.name ? `${newProduct.name} #${i + 1}` : `ЧЕРНОВИК: Товар #${Date.now() + i}`,
                     price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
-                    category: newProduct.category || '',
-                    description: newProduct.description || '',
-                    dimensions: newProduct.dimensions || '',
-                    color: newProduct.color || '',
-                    images: [imageUrl], // Только одно это фото
-                    status: 'draft',
+                    category: newProduct.category || '', description: newProduct.description || '',
+                    dimensions: newProduct.dimensions || '', color: newProduct.color || '',
+                    images: [imageUrl], status: 'draft',
                 };
-
-                // Шаг 3: Сохраняем товар в Firestore
                 await addDoc(collection(db, "products"), productData);
                 createdCount++;
             }
@@ -179,17 +162,12 @@ const AdminPage = () => {
         }
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Если активна массовая загрузка, используем новую логику и выходим
         if (isBatchUpload) {
             await handleBatchSubmit();
             return;
         }
-
-        // --- Старая логика для одиночного товара ---
         if (!isDraft) {
             if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) {
                 alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры.");
@@ -200,7 +178,6 @@ const AdminPage = () => {
             alert("Товар должен иметь хотя бы одно изображение.");
             return;
         }
-        
         setIsUploading(true);
         setUploadProgress('Загрузка изображений...');
         try {
@@ -216,21 +193,17 @@ const AdminPage = () => {
                 imageUrls = [...imageUrls, ...newImageUrls];
             }
             setUploadProgress('Сохранение данных...');
-
             let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); 
             formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; 
-
             let formattedOriginalPrice = null;
             if (newProduct.originalPrice) {
                 formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, '');
                 formattedOriginalPrice = new Intl.NumberFormat('ru-RU').format(formattedOriginalPrice) + ' ₽';
             }
-
             let formattedDimensions = newProduct.dimensions.trim();
             if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
                 formattedDimensions += ' см';
             }
-
             const productData = {
                 name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name,
                 price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice,
@@ -273,13 +246,17 @@ const AdminPage = () => {
         return categoryMatch && colorMatch;
     });
 
+    // ИЗМЕНЕНИЕ 1: Разделяем отфильтрованные товары на две группы
+    const publishedProducts = filteredProducts.filter(p => p.status !== 'draft');
+    const draftProducts = filteredProducts.filter(p => p.status === 'draft');
+
     return (
         <div className="container mx-auto px-6 py-12">
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
-                <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
+                {/* ... вся форма без изменений ... */}
+                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Поля ввода */}
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded" />
                     <div />
                     <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (шаблон)" className="p-2 border rounded" />
@@ -289,8 +266,6 @@ const AdminPage = () => {
                     <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded" />
                     <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded"> <option value="">Цвет (шаблон)</option> {availableColors.map(color => ( <option key={color} value={color}>{color}</option> ))} </select>
                     <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание (шаблон)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
-                    
-                    {/* Загрузка фото */}
                     <div className="md:col-span-2">
                         <label className="block mb-2 text-sm font-medium">Фотографии товара</label>
                         <input id="image-upload" type="file" onChange={handleFileChange} multiple className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" />
@@ -305,8 +280,6 @@ const AdminPage = () => {
                             </div>
                         )}
                     </div>
-
-                    {/* Галочки управления */}
                     {!editingProduct && (
                         <div className="md:col-span-2 flex items-center my-2">
                             <input id="isBatchUpload" type="checkbox" checked={isBatchUpload} onChange={(e) => setIsBatchUpload(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
@@ -317,8 +290,6 @@ const AdminPage = () => {
                         <input id="isDraft" type="checkbox" checked={isDraft} onChange={(e) => setIsDraft(e.target.checked)} disabled={isBatchUpload} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-200" />
                         <label htmlFor="isDraft" className="ml-2 block text-sm text-gray-700">Сохранить как черновик (можно без данных)</label>
                     </div>
-                    
-                    {/* Кнопки */}
                     <div className="md:col-span-2 flex items-center gap-4">
                         <button type="submit" disabled={isUploading} className="w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 transition-colors">
                             {isUploading ? (uploadProgress || 'Загрузка...') : (editingProduct ? 'Сохранить изменения' : 'Добавить товар')}
@@ -328,31 +299,67 @@ const AdminPage = () => {
                 </form>
             </div>
             
-            {/* Список товаров */}
             <div>
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
                 <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
                 <div className="mb-6"><ColorFilter availableColors={availableColors} activeColor={activeColor} setActiveColor={setActiveColor} /></div>
+                
                 {isLoading ? <p>Загрузка...</p> : (
-                    <div className="space-y-4">
-                        {filteredProducts.map(product => (
-                            <div key={product.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <div className="flex items-center gap-4">
-                                    <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white" />
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-bold">{product.name}</p>
-                                            {product.status === 'draft' && (<span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Черновик</span>)}
+                    <div className="space-y-8"> {/* Увеличим отступ между блоками */}
+                        {/* ИЗМЕНЕНИЕ 2: Блок для опубликованных товаров */}
+                        <div>
+                            <h3 className="text-xl font-semibold mb-4 border-b pb-2">Публикации ({publishedProducts.length})</h3>
+                            {publishedProducts.length > 0 ? (
+                                <div className="space-y-4">
+                                    {publishedProducts.map(product => (
+                                        <div key={product.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <div className="flex items-center gap-4">
+                                                <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white" />
+                                                <div>
+                                                    <p className="font-bold">{product.name}</p>
+                                                    <p className="text-sm text-gray-600">{product.category} - {product.price}</p>
+                                                </div>
+                                            </div>
+                                            <div className='flex gap-4'>
+                                                <button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button>
+                                                <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-gray-600">{product.category} - {product.price}</p>
-                                    </div>
+                                    ))}
                                 </div>
-                                <div className='flex gap-4'>
-                                    <button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button>
-                                    <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
+                            ) : (
+                                <p className="text-gray-500">Нет опубликованных товаров, соответствующих фильтрам.</p>
+                            )}
+                        </div>
+
+                        {/* ИЗМЕНЕНИЕ 3: Блок для черновиков */}
+                        <div>
+                            <h3 className="text-xl font-semibold mb-4 border-b pb-2">Черновик ({draftProducts.length})</h3>
+                             {draftProducts.length > 0 ? (
+                                <div className="space-y-4">
+                                    {draftProducts.map(product => (
+                                        <div key={product.id} className="flex items-center justify-between bg-yellow-50 p-4 rounded-lg shadow-sm border-l-4 border-yellow-400">
+                                            <div className="flex items-center gap-4">
+                                                <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white" />
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-bold">{product.name}</p>
+                                                        <span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Черновик</span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">{product.category || 'Нет категории'} - {product.price}</p>
+                                                </div>
+                                            </div>
+                                            <div className='flex gap-4'>
+                                                <button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button>
+                                                <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
-                        ))}
+                            ) : (
+                                 <p className="text-gray-500">Нет черновиков, соответствующих фильтрам.</p>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
