@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import CategoryFilter from '../components/CategoryFilter';
-import ColorFilter from '../components/ColorFilter'; // --- ИЗМЕНЕНИЕ: Импортируем новый компонент
+import MaterialFilter from '../components/MaterialFilter'; // --- ИЗМЕНЕНИЕ: Импортируем новый компонент
 import { db } from '../firebase';
 import { collection, getDocs, query, where } from "firebase/firestore";
 
 // --- ИЗМЕНЕНИЕ: Список цветов, доступных для фильтрации
-const availableColors = ["Бежевый", "Черный", "Коричневый", "Серый", "Белый", "Красный", "Синий", "Зеленый", "Желтый", "Розовый", "Фиолетовый", "Оранжевый", "Серебристый", "Золотистый"];
+const availableColors = ["Вишня", "Бук", "Сандал"];
 
 const CatalogPage = () => {
     const location = useLocation();
@@ -19,7 +19,7 @@ const CatalogPage = () => {
         location.state?.selectedCategory || 'Все товары'
     );
     // --- ИЗМЕНЕНИЕ: Добавляем состояние для активного цвета
-    const [activeColor, setActiveColor] = useState('Все цвета');
+    const [activeMaterial, setActiveMaterial] = useState('Все материалы');
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -44,8 +44,8 @@ const CatalogPage = () => {
         let tempProducts = products;
 
         // Фильтрация по категории
-        if (activeCategory !== 'Все товары') {
-            tempProducts = tempProducts.filter(product => product.category === activeCategory);
+        if (activeMaterial !== 'Все материалы') {
+            tempProducts = tempProducts.filter(product => product.material === activeMaterial);
         }
 
         // Фильтрация по цвету
@@ -69,10 +69,10 @@ const CatalogPage = () => {
 
             {/* --- ИЗМЕНЕНИЕ: Добавляем фильтр по цветам */}
             <div className="mb-12">
-                <ColorFilter 
-                    availableColors={availableColors}
-                    activeColor={activeColor}
-                    setActiveColor={setActiveColor}
+                <MaterialFilter 
+                    availableMaterials={availableMaterials}
+                    activeMaterial={activeMaterial}
+                    setActiveMaterial={setActiveMaterial}
                 />
             </div>
 

@@ -3,10 +3,10 @@ import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 
 import CategoryFilter, { categories } from '../components/CategoryFilter';
-import ColorFilter from '../components/ColorFilter';
+import MaterialFilter from '../components/MaterialFilter';
 
 const IMGBB_API_KEY = "a3b4e8feb7a0fba8a78002fdb5304fc0";
-const availableColors = ["Бежевый", "Черный", "Коричневый", "Серый", "Белый", "Красный", "Синий", "Зеленый", "Желтый", "Розовый", "Фиолетовый", "Оранжевый", "Серебристый", "Золотистый"];
+const availableColors = ["Вишня", "Бук", "Сандал"];
 
 const formatNumberWithSpaces = (value) => {
     if (!value) return '';
@@ -17,13 +17,13 @@ const formatNumberWithSpaces = (value) => {
 const AdminPage = () => {
     const [products, setProducts] = useState([]);
     const [newProduct, setNewProduct] = useState({
-        name: '', price: '', originalPrice: '', category: '', dimensions: '', color: '', description: ''
+        name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: ''
     });
     const [discount, setDiscount] = useState(0);
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
     const [activeCategory, setActiveCategory] = useState('Все товары');
-    const [activeColor, setActiveColor] = useState('Все цвета');
+    const [activeMaterial, setActiveMaterial] = useState('Все материалы');
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
@@ -208,8 +208,9 @@ const AdminPage = () => {
                 name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name,
                 price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice,
                 ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }),
-                category: newProduct.category, dimensions: formattedDimensions,
-                ...(newProduct.color && { color: newProduct.color }),
+                category: newProduct.category,
+                dimensions: formattedDimensions,
+                ...(newProduct.material && { material: newProduct.material }), // ВОТ ИЗМЕНЕНИЕ
                 ...(newProduct.description && { description: newProduct.description }),
                 images: imageUrls,
                 status: isDraft ? 'draft' : 'published',
@@ -242,8 +243,8 @@ const AdminPage = () => {
 
     const filteredProducts = products.filter(product => {
         const categoryMatch = activeCategory === 'Все товары' || product.category === activeCategory;
-        const colorMatch = activeColor === 'Все цвета' || product.color === activeColor;
-        return categoryMatch && colorMatch;
+       const materialMatch = activeMaterial === 'Все материалы' || product.material === activeMaterial;
+        return categoryMatch && materialMatch;
     });
 
     // ИЗМЕНЕНИЕ 1: Разделяем отфильтрованные товары на две группы
@@ -262,7 +263,12 @@ const AdminPage = () => {
                     <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (шаблон)" className="p-2 border rounded" />
                     <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена со скидкой (шаблон)" className="p-2 border rounded" />
                     {discount > 0 && ( <div className="md:col-span-2 text-center p-2 bg-green-100 text-green-800 rounded-md -mt-2"> Рассчитанная скидка: **{discount}%** </div> )}
-                    <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded"> <option value="" disabled>Выберите категорию (шаблон)</option> {categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))} </select>
+                    <select name="material" value={newProduct.material} onChange={handleInputChange} className="p-2 border rounded">
+                        <option value="">Материал (необязательно)</option>
+                        {availableMaterials.map(material => (
+                            <option key={material} value={material}>{material}</option>
+                        ))}
+                    </select>
                     <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded" />
                     <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded"> <option value="">Цвет (шаблон)</option> {availableColors.map(color => ( <option key={color} value={color}>{color}</option> ))} </select>
                     <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание (шаблон)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
