@@ -15,6 +15,7 @@ const formatNumberWithSpaces = (value) => {
 };
 
 const AdminPage = () => {
+    // ... все старые useState без изменений
     const [products, setProducts] = useState([]);
     const [newProduct, setNewProduct] = useState({
         name: '', price: '', originalPrice: '', category: '', dimensions: '', color: '', description: ''
@@ -27,14 +28,23 @@ const AdminPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    
-    // ИЗМЕНЕНИЕ 1: Состояние для галочки "черновик"
     const [isDraft, setIsDraft] = useState(false);
+    
+    // ИЗМЕНЕНИЕ 1: Состояния для новой фичи
+    const [isBatchUpload, setIsBatchUpload] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState('');
+
+    // ИЗМЕНЕНИЕ 2: Автоматически включаем режим "черновика", если выбрана массовая загрузка
+    useEffect(() => {
+        if (isBatchUpload) {
+            setIsDraft(true);
+        }
+    }, [isBatchUpload]);
+
 
     useEffect(() => {
         const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
         const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, ''));
-
         if (original > 0 && sale > 0 && original > sale) {
             setDiscount(Math.round(((original - sale) / original) * 100));
         } else {
@@ -96,18 +106,12 @@ const AdminPage = () => {
         const originalPriceForEdit = product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : '';
         const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '';
         setNewProduct({
-            name: product.name || '',
-            price: formatNumberWithSpaces(priceForEdit),
-            originalPrice: formatNumberWithSpaces(originalPriceForEdit),
-            category: product.category || '',
-            dimensions: dimensionsForEdit,
-            color: product.color || '',
-            description: product.description || ''
+            name: product.name || '', price: formatNumberWithSpaces(priceForEdit), originalPrice: formatNumberWithSpaces(originalPriceForEdit), category: product.category || '', dimensions: dimensionsForEdit, color: product.color || '', description: product.description || ''
         });
         setImagePreviews(product.images || []);
         setImageFiles([]);
-        // ИЗМЕНЕНИЕ 2: Устанавливаем галочку в зависимости от статуса товара
         setIsDraft(product.status === 'draft');
+        setIsBatchUpload(false); // Выключаем массовую загрузку в режиме редактирования
         window.scrollTo(0, 0);
     };
 
@@ -117,30 +121,88 @@ const AdminPage = () => {
         setImageFiles([]);
         setImagePreviews([]);
         setDiscount(0);
-        // ИЗМЕНЕНИЕ 3: Сбрасываем галочку при отмене
         setIsDraft(false);
+        setIsBatchUpload(false); // Сбрасываем и эту галочку
+        setUploadProgress(''); // И прогресс
     };
+
+    // ИЗМЕНЕНИЕ 3: Выносим логику массовой загрузки в отдельную функцию для чистоты
+    const handleBatchSubmit = async () => {
+        if (imageFiles.length === 0) {
+            alert("Пожалуйста, выберите фотографии для массовой загрузки.");
+            return;
+        }
+
+        setIsUploading(true);
+        let createdCount = 0;
+
+        try {
+            for (let i = 0; i < imageFiles.length; i++) {
+                const file = imageFiles[i];
+                setUploadProgress(`Загрузка ${i + 1} из ${imageFiles.length}...`);
+
+                // Шаг 1: Загружаем фото на хостинг
+                const formData = new FormData();
+                formData.append('image', file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                const result = await res.json();
+                if (!result.data || !result.data.url) {
+                    console.warn(`Не удалось загрузить файл ${file.name}, пропускаем.`);
+                    continue; // Пропускаем этот файл, если он не загрузился
+                }
+                const imageUrl = result.data.url;
+
+                // Шаг 2: Готовим данные для нового товара-черновика
+                const productData = {
+                    name: newProduct.name ? `${newProduct.name} #${i + 1}` : `ЧЕРНОВИК: Товар #${Date.now() + i}`,
+                    price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
+                    category: newProduct.category || '',
+                    description: newProduct.description || '',
+                    dimensions: newProduct.dimensions || '',
+                    color: newProduct.color || '',
+                    images: [imageUrl], // Только одно это фото
+                    status: 'draft',
+                };
+
+                // Шаг 3: Сохраняем товар в Firestore
+                await addDoc(collection(db, "products"), productData);
+                createdCount++;
+            }
+            alert(`Массовая загрузка завершена! Успешно создано ${createdCount} товаров.`);
+        } catch (error) {
+            console.error("Ошибка при массовой загрузке: ", error);
+            alert(`Произошла ошибка. Успешно создано ${createdCount} товаров. Подробности в консоли.`);
+        } finally {
+            setIsUploading(false);
+            cancelEdit();
+            fetchProducts();
+        }
+    };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // ИЗМЕНЕНИЕ 4: Новая логика валидации
+        // Если активна массовая загрузка, используем новую логику и выходим
+        if (isBatchUpload) {
+            await handleBatchSubmit();
+            return;
+        }
+
+        // --- Старая логика для одиночного товара ---
         if (!isDraft) {
-            // Если НЕ черновик, проверяем обязательные поля
             if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) {
                 alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры.");
                 return;
             }
         }
-
-        if (imageFiles.length === 0 && (!editingProduct || !editingProduct.images || editingProduct.images.length === 0)) {
-             if (imagePreviews.length === 0) {
-                alert("Товар должен иметь хотя бы одно изображение.");
-                return;
-             }
+        if (imagePreviews.length === 0) {
+            alert("Товар должен иметь хотя бы одно изображение.");
+            return;
         }
         
         setIsUploading(true);
+        setUploadProgress('Загрузка изображений...');
         try {
             let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : [];
             if (imageFiles.length > 0) {
@@ -153,6 +215,7 @@ const AdminPage = () => {
                 const newImageUrls = uploadResults.map(result => result.data.url);
                 imageUrls = [...imageUrls, ...newImageUrls];
             }
+            setUploadProgress('Сохранение данных...');
 
             let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); 
             formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; 
@@ -168,17 +231,15 @@ const AdminPage = () => {
                 formattedDimensions += ' см';
             }
 
-            // ИЗМЕНЕНИЕ 5: Добавляем статус и заглушки для черновика
             const productData = {
                 name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name,
                 price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice,
                 ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }),
-                category: newProduct.category,
-                dimensions: formattedDimensions,
+                category: newProduct.category, dimensions: formattedDimensions,
                 ...(newProduct.color && { color: newProduct.color }),
                 ...(newProduct.description && { description: newProduct.description }),
                 images: imageUrls,
-                status: isDraft ? 'draft' : 'published', // Добавляем статус
+                status: isDraft ? 'draft' : 'published',
             };
             if (editingProduct) {
                 const productRef = doc(db, "products", editingProduct.id);
@@ -193,6 +254,7 @@ const AdminPage = () => {
             alert("Произошла ошибка. Подробности в консоли.");
         } finally {
             setIsUploading(false);
+            setUploadProgress('');
         }
     };
 
@@ -201,9 +263,7 @@ const AdminPage = () => {
             try {
                 await deleteDoc(doc(db, "products", productId));
                 fetchProducts();
-            } catch (error) {
-                console.error("Ошибка при удалении товара: ", error);
-            }
+            } catch (error) { console.error("Ошибка при удалении товара: ", error); }
         }
     };
 
@@ -219,33 +279,18 @@ const AdminPage = () => {
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* ИЗМЕНЕНИЕ 6: Убираем 'required' из полей */}
-                    <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара" className="p-2 border rounded" />
+                    {/* Поля ввода */}
+                    <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded" />
                     <div />
-                    <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (без скидки)" className="p-2 border rounded" />
-                    <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена со скидкой" className="p-2 border rounded" />
+                    <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (шаблон)" className="p-2 border rounded" />
+                    <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена со скидкой (шаблон)" className="p-2 border rounded" />
+                    {discount > 0 && ( <div className="md:col-span-2 text-center p-2 bg-green-100 text-green-800 rounded-md -mt-2"> Рассчитанная скидка: **{discount}%** </div> )}
+                    <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded"> <option value="" disabled>Выберите категорию (шаблон)</option> {categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))} </select>
+                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded" />
+                    <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded"> <option value="">Цвет (шаблон)</option> {availableColors.map(color => ( <option key={color} value={color}>{color}</option> ))} </select>
+                    <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание (шаблон)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
                     
-                    {discount > 0 && (
-                        <div className="md:col-span-2 text-center p-2 bg-green-100 text-green-800 rounded-md -mt-2">
-                            Рассчитанная скидка: **{discount}%**
-                        </div>
-                    )}
-
-                    <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded">
-                        <option value="" disabled>Выберите категорию</option>
-                        {categories.filter(c => c.value !== 'Все товары').map(cat => (
-                            <option key={cat.value} value={cat.value}>{cat.name}</option>
-                        ))}
-                    </select>
-                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (например, 45 x 50 x 95)" className="p-2 border rounded" />
-                    <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded">
-                        <option value="">Цвет (необязательно)</option>
-                        {availableColors.map(color => (
-                            <option key={color} value={color}>{color}</option>
-                        ))}
-                    </select>
-                    <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание товара (необязательно)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
-                    
+                    {/* Загрузка фото */}
                     <div className="md:col-span-2">
                         <label className="block mb-2 text-sm font-medium">Фотографии товара</label>
                         <input id="image-upload" type="file" onChange={handleFileChange} multiple className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" />
@@ -261,37 +306,33 @@ const AdminPage = () => {
                         )}
                     </div>
 
-                    {/* ИЗМЕНЕНИЕ 7: Добавляем саму галочку */}
-                    <div className="md:col-span-2 flex items-center my-2">
-                        <input
-                            id="isDraft"
-                            type="checkbox"
-                            checked={isDraft}
-                            onChange={(e) => setIsDraft(e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="isDraft" className="ml-2 block text-sm text-gray-700">
-                            Сохранить как черновик (можно без данных)
-                        </label>
+                    {/* Галочки управления */}
+                    {!editingProduct && (
+                        <div className="md:col-span-2 flex items-center my-2">
+                            <input id="isBatchUpload" type="checkbox" checked={isBatchUpload} onChange={(e) => setIsBatchUpload(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                            <label htmlFor="isBatchUpload" className="ml-2 block text-sm font-bold text-gray-700">Загрузить каждое фото как отдельный товар</label>
+                        </div>
+                    )}
+                    <div className="md:col-span-2 flex items-center -mt-2">
+                        <input id="isDraft" type="checkbox" checked={isDraft} onChange={(e) => setIsDraft(e.target.checked)} disabled={isBatchUpload} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-200" />
+                        <label htmlFor="isDraft" className="ml-2 block text-sm text-gray-700">Сохранить как черновик (можно без данных)</label>
                     </div>
                     
+                    {/* Кнопки */}
                     <div className="md:col-span-2 flex items-center gap-4">
-                        <button type="submit" disabled={isUploading} className="w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400">
-                            {isUploading ? 'Загрузка...' : (editingProduct ? 'Сохранить изменения' : 'Добавить товар')}
+                        <button type="submit" disabled={isUploading} className="w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 transition-colors">
+                            {isUploading ? (uploadProgress || 'Загрузка...') : (editingProduct ? 'Сохранить изменения' : 'Добавить товар')}
                         </button>
-                        {editingProduct && (
-                            <button type="button" onClick={cancelEdit} className="w-full py-3 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
-                                Отмена
-                            </button>
-                        )}
+                        {editingProduct && ( <button type="button" onClick={cancelEdit} className="w-full py-3 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Отмена</button> )}
                     </div>
                 </form>
             </div>
+            
+            {/* Список товаров */}
             <div>
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
                 <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
                 <div className="mb-6"><ColorFilter availableColors={availableColors} activeColor={activeColor} setActiveColor={setActiveColor} /></div>
-                
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-4">
                         {filteredProducts.map(product => (
@@ -301,10 +342,7 @@ const AdminPage = () => {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <p className="font-bold">{product.name}</p>
-                                            {/* ИЗМЕНЕНИЕ 8: Показываем статус "Черновик" */}
-                                            {product.status === 'draft' && (
-                                                <span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Черновик</span>
-                                            )}
+                                            {product.status === 'draft' && (<span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Черновик</span>)}
                                         </div>
                                         <p className="text-sm text-gray-600">{product.category} - {product.price}</p>
                                     </div>
