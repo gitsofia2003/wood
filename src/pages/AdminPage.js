@@ -10,9 +10,7 @@ const availableColors = ["Бежевый", "Черный", "Коричневый
 
 const formatNumberWithSpaces = (value) => {
     if (!value) return '';
-    // 1. Убираем всё, кроме цифр
     const numericValue = value.replace(/[^0-9]/g, '');
-    // 2. Добавляем пробелы
     return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
@@ -29,15 +27,16 @@ const AdminPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
+    
+    // ИЗМЕНЕНИЕ 1: Состояние для галочки "черновик"
+    const [isDraft, setIsDraft] = useState(false);
 
     useEffect(() => {
-        // Сначала убираем пробелы и все не-цифры, а уже потом считаем
         const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
-        const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, ''));
+        const sale = parseFloat(String(newProduct.price).replace(/[^0--9]/g, ''));
 
         if (original > 0 && sale > 0 && original > sale) {
-            const calculatedDiscount = Math.round(((original - sale) / original) * 100);
-            setDiscount(calculatedDiscount);
+            setDiscount(Math.round(((original - sale) / original) * 100));
         } else {
             setDiscount(0);
         }
@@ -52,7 +51,7 @@ const AdminPage = () => {
     };
 
     useEffect(() => { fetchProducts(); }, []);
-
+    
     useEffect(() => {
         return () => {
             imagePreviews.forEach(preview => {
@@ -65,13 +64,9 @@ const AdminPage = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        
         if (name === 'price' || name === 'originalPrice') {
-            // Если это поле цены, форматируем значение
-            const formattedValue = formatNumberWithSpaces(value);
-            setNewProduct(prevState => ({ ...prevState, [name]: formattedValue }));
+            setNewProduct(prevState => ({ ...prevState, [name]: formatNumberWithSpaces(value) }));
         } else {
-            // Для всех остальных полей оставляем как было
             setNewProduct(prevState => ({ ...prevState, [name]: value }));
         }
     };
@@ -111,6 +106,8 @@ const AdminPage = () => {
         });
         setImagePreviews(product.images || []);
         setImageFiles([]);
+        // ИЗМЕНЕНИЕ 2: Устанавливаем галочку в зависимости от статуса товара
+        setIsDraft(product.status === 'draft');
         window.scrollTo(0, 0);
     };
 
@@ -120,10 +117,29 @@ const AdminPage = () => {
         setImageFiles([]);
         setImagePreviews([]);
         setDiscount(0);
+        // ИЗМЕНЕНИЕ 3: Сбрасываем галочку при отмене
+        setIsDraft(false);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // ИЗМЕНЕНИЕ 4: Новая логика валидации
+        if (!isDraft) {
+            // Если НЕ черновик, проверяем обязательные поля
+            if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) {
+                alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры.");
+                return;
+            }
+        }
+
+        if (imageFiles.length === 0 && (!editingProduct || !editingProduct.images || editingProduct.images.length === 0)) {
+             if (imagePreviews.length === 0) {
+                alert("Товар должен иметь хотя бы одно изображение.");
+                return;
+             }
+        }
+        
         setIsUploading(true);
         try {
             let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : [];
@@ -136,11 +152,6 @@ const AdminPage = () => {
                 const uploadResults = await Promise.all(uploadPromises);
                 const newImageUrls = uploadResults.map(result => result.data.url);
                 imageUrls = [...imageUrls, ...newImageUrls];
-            }
-            if (imageUrls.length === 0) {
-                alert("Товар должен иметь хотя бы одно изображение.");
-                setIsUploading(false);
-                return;
             }
 
             let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); 
@@ -157,15 +168,17 @@ const AdminPage = () => {
                 formattedDimensions += ' см';
             }
 
+            // ИЗМЕНЕНИЕ 5: Добавляем статус и заглушки для черновика
             const productData = {
-                name: newProduct.name,
-                price: formattedPrice,
+                name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name,
+                price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice,
                 ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }),
                 category: newProduct.category,
                 dimensions: formattedDimensions,
                 ...(newProduct.color && { color: newProduct.color }),
                 ...(newProduct.description && { description: newProduct.description }),
                 images: imageUrls,
+                status: isDraft ? 'draft' : 'published', // Добавляем статус
             };
             if (editingProduct) {
                 const productRef = doc(db, "products", editingProduct.id);
@@ -206,10 +219,11 @@ const AdminPage = () => {
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара" required className="p-2 border rounded" />
+                    {/* ИЗМЕНЕНИЕ 6: Убираем 'required' из полей */}
+                    <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара" className="p-2 border rounded" />
                     <div />
                     <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (без скидки)" className="p-2 border rounded" />
-                    <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена со скидкой (обязательно)" required className="p-2 border rounded" />
+                    <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена со скидкой" className="p-2 border rounded" />
                     
                     {discount > 0 && (
                         <div className="md:col-span-2 text-center p-2 bg-green-100 text-green-800 rounded-md -mt-2">
@@ -217,13 +231,13 @@ const AdminPage = () => {
                         </div>
                     )}
 
-                    <select name="category" value={newProduct.category} onChange={handleInputChange} required className="p-2 border rounded">
+                    <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded">
                         <option value="" disabled>Выберите категорию</option>
                         {categories.filter(c => c.value !== 'Все товары').map(cat => (
                             <option key={cat.value} value={cat.value}>{cat.name}</option>
                         ))}
                     </select>
-                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (например, 45 x 50 x 95)" required className="p-2 border rounded" />
+                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (например, 45 x 50 x 95)" className="p-2 border rounded" />
                     <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded">
                         <option value="">Цвет (необязательно)</option>
                         {availableColors.map(color => (
@@ -245,6 +259,20 @@ const AdminPage = () => {
                                 ))}
                             </div>
                         )}
+                    </div>
+
+                    {/* ИЗМЕНЕНИЕ 7: Добавляем саму галочку */}
+                    <div className="md:col-span-2 flex items-center my-2">
+                        <input
+                            id="isDraft"
+                            type="checkbox"
+                            checked={isDraft}
+                            onChange={(e) => setIsDraft(e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="isDraft" className="ml-2 block text-sm text-gray-700">
+                            Сохранить как черновик (можно без данных)
+                        </label>
                     </div>
                     
                     <div className="md:col-span-2 flex items-center gap-4">
@@ -271,7 +299,13 @@ const AdminPage = () => {
                                 <div className="flex items-center gap-4">
                                     <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white" />
                                     <div>
-                                        <p className="font-bold">{product.name}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-bold">{product.name}</p>
+                                            {/* ИЗМЕНЕНИЕ 8: Показываем статус "Черновик" */}
+                                            {product.status === 'draft' && (
+                                                <span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Черновик</span>
+                                            )}
+                                        </div>
                                         <p className="text-sm text-gray-600">{product.category} - {product.price}</p>
                                     </div>
                                 </div>
