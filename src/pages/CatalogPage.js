@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import CategoryFilter from '../components/CategoryFilter';
-import MaterialFilter from '../components/MaterialFilter'; // --- ИЗМЕНЕНИЕ: Импортируем новый компонент
+import MaterialFilter from '../components/MaterialFilter';
 import { db } from '../firebase';
 import { collection, getDocs, query, where } from "firebase/firestore";
 
-// --- ИЗМЕНЕНИЕ: Список цветов, доступных для фильтрации
 const availableMaterials = ["Вишня", "Бук", "Сандал"];
 
 const CatalogPage = () => {
@@ -15,10 +14,7 @@ const CatalogPage = () => {
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     
-    const [activeCategory, setActiveCategory] = useState(
-        location.state?.selectedCategory || 'Все товары'
-    );
-    // --- ИЗМЕНЕНИЕ: Добавляем состояние для активного цвета
+    const [activeCategory, setActiveCategory] = useState(location.state?.selectedCategory || 'Все товары');
     const [activeMaterial, setActiveMaterial] = useState('Все материалы');
 
     useEffect(() => {
@@ -39,22 +35,21 @@ const CatalogPage = () => {
         fetchProducts();
     }, []);
 
-    // --- ИЗМЕНЕНИЕ: Обновляем логику фильтрации
     useEffect(() => {
         let tempProducts = products;
 
-        // Фильтрация по категории
+        // Шаг 1: Фильтрация по категории
+        if (activeCategory !== 'Все товары') {
+            tempProducts = tempProducts.filter(product => product.category === activeCategory);
+        }
+
+        // Шаг 2: Фильтрация по материалу
         if (activeMaterial !== 'Все материалы') {
             tempProducts = tempProducts.filter(product => product.material === activeMaterial);
         }
 
-        // Фильтрация по цвету
-        if (activeColor !== 'Все цвета') {
-            tempProducts = tempProducts.filter(product => product.color === activeColor);
-        }
-
         setFilteredProducts(tempProducts);
-    }, [activeCategory, activeColor, products]);
+    }, [activeCategory, activeMaterial, products]);
 
     return (
         <main className="container mx-auto px-6 py-12">
@@ -67,7 +62,6 @@ const CatalogPage = () => {
                 />
             </div>
 
-            {/* --- ИЗМЕНЕНИЕ: Добавляем фильтр по цветам */}
             <div className="mb-12">
                 <MaterialFilter 
                     availableMaterials={availableMaterials}

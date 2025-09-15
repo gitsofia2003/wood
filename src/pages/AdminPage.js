@@ -1,3 +1,5 @@
+// src/pages/AdminPage.js
+
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
@@ -67,7 +69,6 @@ const AdminPage = () => {
         };
     }, [imagePreviews]);
 
-    // ... handleInputChange, handleFileChange, handleRemoveImage без изменений ...
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         if (name === 'price' || name === 'originalPrice') {
@@ -76,6 +77,7 @@ const AdminPage = () => {
             setNewProduct(prevState => ({ ...prevState, [name]: value }));
         }
     };
+
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);
         if (newFiles.length === 0) return;
@@ -84,6 +86,7 @@ const AdminPage = () => {
         setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
         e.target.value = null;
     };
+
     const handleRemoveImage = (indexToRemove) => {
         const urlToRemove = imagePreviews[indexToRemove];
         if (urlToRemove.startsWith('blob:')) {
@@ -94,14 +97,19 @@ const AdminPage = () => {
         setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove));
     };
 
-
     const handleEditClick = (product) => {
         setEditingProduct(product);
         const priceForEdit = product.price ? String(product.price).replace(/[^0-9]/g, '') : '';
         const originalPriceForEdit = product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : '';
         const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '';
         setNewProduct({
-            name: product.name || '', price: formatNumberWithSpaces(priceForEdit), originalPrice: formatNumberWithSpaces(originalPriceForEdit), category: product.category || '', dimensions: dimensionsForEdit, color: product.color || '', description: product.description || ''
+            name: product.name || '',
+            price: formatNumberWithSpaces(priceForEdit),
+            originalPrice: formatNumberWithSpaces(originalPriceForEdit),
+            category: product.category || '',
+            dimensions: dimensionsForEdit,
+            material: product.material || '',
+            description: product.description || ''
         });
         setImagePreviews(product.images || []);
         setImageFiles([]);
@@ -112,7 +120,7 @@ const AdminPage = () => {
 
     const cancelEdit = () => {
         setEditingProduct(null);
-        setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', color: '', description: '' });
+        setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
         setImageFiles([]);
         setImagePreviews([]);
         setDiscount(0);
@@ -144,9 +152,12 @@ const AdminPage = () => {
                 const productData = {
                     name: newProduct.name ? `${newProduct.name} #${i + 1}` : `ЧЕРНОВИК: Товар #${Date.now() + i}`,
                     price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
-                    category: newProduct.category || '', description: newProduct.description || '',
-                    dimensions: newProduct.dimensions || '', color: newProduct.color || '',
-                    images: [imageUrl], status: 'draft',
+                    category: newProduct.category || '',
+                    description: newProduct.description || '',
+                    dimensions: newProduct.dimensions || '',
+                    material: newProduct.material || '',
+                    images: [imageUrl],
+                    status: 'draft',
                 };
                 await addDoc(collection(db, "products"), productData);
                 createdCount++;
@@ -193,8 +204,8 @@ const AdminPage = () => {
                 imageUrls = [...imageUrls, ...newImageUrls];
             }
             setUploadProgress('Сохранение данных...');
-            let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); 
-            formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; 
+            let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, '');
+            formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽';
             let formattedOriginalPrice = null;
             if (newProduct.originalPrice) {
                 formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, '');
@@ -210,7 +221,7 @@ const AdminPage = () => {
                 ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }),
                 category: newProduct.category,
                 dimensions: formattedDimensions,
-                ...(newProduct.material && { material: newProduct.material }), // ВОТ ИЗМЕНЕНИЕ
+                ...(newProduct.material && { material: newProduct.material }),
                 ...(newProduct.description && { description: newProduct.description }),
                 images: imageUrls,
                 status: isDraft ? 'draft' : 'published',
@@ -237,17 +248,18 @@ const AdminPage = () => {
             try {
                 await deleteDoc(doc(db, "products", productId));
                 fetchProducts();
-            } catch (error) { console.error("Ошибка при удалении товара: ", error); }
+            } catch (error) {
+                console.error("Ошибка при удалении товара: ", error);
+            }
         }
     };
 
     const filteredProducts = products.filter(product => {
         const categoryMatch = activeCategory === 'Все товары' || product.category === activeCategory;
-       const materialMatch = activeMaterial === 'Все материалы' || product.material === activeMaterial;
+        const materialMatch = activeMaterial === 'Все материалы' || product.material === activeMaterial;
         return categoryMatch && materialMatch;
     });
 
-    // ИЗМЕНЕНИЕ 1: Разделяем отфильтрованные товары на две группы
     const publishedProducts = filteredProducts.filter(p => p.status !== 'draft');
     const draftProducts = filteredProducts.filter(p => p.status === 'draft');
 
@@ -255,22 +267,24 @@ const AdminPage = () => {
         <div className="container mx-auto px-6 py-12">
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
-                {/* ... вся форма без изменений ... */}
-                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
+                <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded" />
                     <div />
                     <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (шаблон)" className="p-2 border rounded" />
                     <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена со скидкой (шаблон)" className="p-2 border rounded" />
                     {discount > 0 && ( <div className="md:col-span-2 text-center p-2 bg-green-100 text-green-800 rounded-md -mt-2"> Рассчитанная скидка: **{discount}%** </div> )}
+                    <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded">
+                        <option value="" disabled>Выберите категорию</option>
+                        {categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))}
+                    </select>
+                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded" />
                     <select name="material" value={newProduct.material} onChange={handleInputChange} className="p-2 border rounded">
                         <option value="">Материал (необязательно)</option>
                         {availableMaterials.map(material => (
                             <option key={material} value={material}>{material}</option>
                         ))}
                     </select>
-                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded" />
-                    <select name="color" value={newProduct.color} onChange={handleInputChange} className="p-2 border rounded"> <option value="">Цвет (шаблон)</option> {availableColors.map(color => ( <option key={color} value={color}>{color}</option> ))} </select>
                     <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание (шаблон)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
                     <div className="md:col-span-2">
                         <label className="block mb-2 text-sm font-medium">Фотографии товара</label>
@@ -308,11 +322,10 @@ const AdminPage = () => {
             <div>
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
                 <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
-                <div className="mb-6"><ColorFilter availableColors={availableColors} activeColor={activeColor} setActiveColor={setActiveColor} /></div>
+                <div className="mb-6"><MaterialFilter availableMaterials={availableMaterials} activeMaterial={activeMaterial} setActiveMaterial={setActiveMaterial} /></div>
                 
                 {isLoading ? <p>Загрузка...</p> : (
-                    <div className="space-y-8"> {/* Увеличим отступ между блоками */}
-                        {/* ИЗМЕНЕНИЕ 2: Блок для опубликованных товаров */}
+                    <div className="space-y-8">
                         <div>
                             <h3 className="text-xl font-semibold mb-4 border-b pb-2">Публикации ({publishedProducts.length})</h3>
                             {publishedProducts.length > 0 ? (
@@ -338,7 +351,6 @@ const AdminPage = () => {
                             )}
                         </div>
 
-                        {/* ИЗМЕНЕНИЕ 3: Блок для черновиков */}
                         <div>
                             <h3 className="text-xl font-semibold mb-4 border-b pb-2">Черновик ({draftProducts.length})</h3>
                              {draftProducts.length > 0 ? (
