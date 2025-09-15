@@ -4,7 +4,7 @@ import ProductCard from '../components/ProductCard';
 import CategoryFilter from '../components/CategoryFilter';
 import ColorFilter from '../components/ColorFilter'; // --- ИЗМЕНЕНИЕ: Импортируем новый компонент
 import { db } from '../firebase';
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 // --- ИЗМЕНЕНИЕ: Список цветов, доступных для фильтрации
 const availableColors = ["Бежевый", "Черный", "Коричневый", "Серый", "Белый", "Красный", "Синий", "Зеленый", "Желтый", "Розовый", "Фиолетовый", "Оранжевый", "Серебристый", "Золотистый"];
@@ -25,8 +25,9 @@ const CatalogPage = () => {
         const fetchProducts = async () => {
             setIsLoading(true);
             try {
-                const productsCollection = collection(db, "products");
-                const productSnapshot = await getDocs(productsCollection);
+                const productsRef = collection(db, "products");
+                const q = query(productsRef, where("status", "==", "published"));
+                const productSnapshot = await getDocs(q);
                 const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setProducts(productList);
             } catch (error) {
