@@ -78,7 +78,7 @@ const ProductCard = ({ product }) => {
                 onMouseLeave={() => setIsHovered(false)}
             >
             {/* --- ИЗМЕНЕНИЕ ЗДЕСЬ: Добавлены префиксы md: --- */}
-                <div className="relative group transition-shadow duration-300 h-64 flex items-center justify-center overflow-hidden md:bg-sand md:p-2 md:rounded-md md:group-hover:shadow-xl">
+                <div className="relative group transition-shadow duration-300 h-64 flex items-center justify-center overflow-hidden md:bg-white md:p-2 md:rounded-md md:group-hover:shadow-xl">
                     {discount > 0 && (
                         <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
                             -{discount}%
