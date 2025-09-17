@@ -6,7 +6,11 @@ import MaterialFilter from '../components/MaterialFilter';
 import { db } from '../firebase';
 import { collection, getDocs, query, where } from "firebase/firestore";
 
-const availableMaterials = ["Вишня", "Бук", "Сандал"];
+const availableMaterials = [
+    { name: "Вишня", color: "#6D282B" }, // темно-вишневый
+    { name: "Бук", color: "#DAB88F" },   // светло-бежевый
+    { name: "Сандал", color: "#B07953" } // теплый коричневый
+];
 
 const CatalogPage = () => {
     const location = useLocation();
@@ -62,7 +66,7 @@ const CatalogPage = () => {
                 />
             </div>
 
-            <div className="mb-12">
+            <div className="mb-12 flex justify-center">
                 <MaterialFilter 
                     availableMaterials={availableMaterials}
                     activeMaterial={activeMaterial}

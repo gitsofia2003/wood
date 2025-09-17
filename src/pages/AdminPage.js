@@ -8,7 +8,11 @@ import CategoryFilter, { categories } from '../components/CategoryFilter';
 import MaterialFilter from '../components/MaterialFilter';
 
 const IMGBB_API_KEY = "a3b4e8feb7a0fba8a78002fdb5304fc0";
-const availableMaterials = ["Вишня", "Бук", "Сандал"];
+const availableMaterials = [
+    { name: "Вишня", color: "#6D282B" }, // темно-вишневый
+    { name: "Бук", color: "#DAB88F" },   // светло-бежевый
+    { name: "Сандал", color: "#B07953" } // теплый коричневый
+];
 
 const formatNumberWithSpaces = (value) => {
     if (!value) return '';
@@ -254,14 +258,16 @@ const AdminPage = () => {
         }
     };
 
-    const filteredProducts = products.filter(product => {
-        const categoryMatch = activeCategory === 'Все товары' || product.category === activeCategory;
-        const materialMatch = activeMaterial === 'Все материалы' || product.material === activeMaterial;
+    // Новая, правильная логика
+    const publishedProducts = products.filter(p => {
+        if (p.status === 'draft') return false; // Сразу исключаем черновики
+        const categoryMatch = activeCategory === 'Все товары' || p.category === activeCategory;
+        const materialMatch = activeMaterial === 'Все материалы' || p.material === activeMaterial;
         return categoryMatch && materialMatch;
     });
 
-    const publishedProducts = filteredProducts.filter(p => p.status !== 'draft');
-    const draftProducts = filteredProducts.filter(p => p.status === 'draft');
+    // А черновики просто берем из общего списка, без фильтров
+    const draftProducts = products.filter(p => p.status === 'draft');
 
     return (
         <div className="container mx-auto px-6 py-12">
@@ -322,7 +328,7 @@ const AdminPage = () => {
             <div>
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
                 <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
-                <div className="mb-6"><MaterialFilter availableMaterials={availableMaterials} activeMaterial={activeMaterial} setActiveMaterial={setActiveMaterial} /></div>
+                <div className="mb-6 flex justify-center"><MaterialFilter availableMaterials={availableMaterials} activeMaterial={activeMaterial} setActiveMaterial={setActiveMaterial} /></div>
                 
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-8">
