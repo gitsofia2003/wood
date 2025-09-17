@@ -285,10 +285,11 @@ const AdminPage = () => {
                         {categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))}
                     </select>
                     <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded" />
+
                     <select name="material" value={newProduct.material} onChange={handleInputChange} className="p-2 border rounded">
                         <option value="">Материал (необязательно)</option>
-                        {availableMaterials.map(material => (
-                            <option key={material} value={material}>{material}</option>
+                        {availableMaterials.map(materialObj => (
+                            <option key={materialObj.name} value={materialObj.name}>{materialObj.name}</option>
                         ))}
                     </select>
                     <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание (шаблон)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
