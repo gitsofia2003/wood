@@ -64,8 +64,11 @@ const AdminPage = () => {
         let successfulUploads = 0;
         let skippedUploads = 0;
         const failedFiles = [];
+
+        const chunkSize = 10; // Загружаем по 10 файлов за раз
         
-        const chunkSize = 10;
+        // Функция для паузы
+        const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
         for (let i = 0; i < totalFiles; i += chunkSize) {
             const chunk = imageFiles.slice(i, i + chunkSize);
@@ -73,28 +76,26 @@ const AdminPage = () => {
 
             const uploadPromises = chunk.map(async (file) => {
                 try {
-                    // ШАГ 1: Проверка на дубликат в Firestore
                     const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
                     const existingFileSnapshot = await getDocs(q);
 
                     if (!existingFileSnapshot.empty) {
                         console.log(`Файл ${file.name} уже существует. Пропускаем.`);
                         skippedUploads++;
-                        return; // Просто выходим, если файл уже есть
+                        return;
                     }
 
-                    // ШАГ 2: Загрузка на ImgBB
                     const formData = new FormData();
                     formData.append('image', file);
                     const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
                     const result = await res.json();
 
-                    if (!result.data || !result.data.url) {
-                        throw new Error(`Не удалось загрузить файл: ${file.name}`);
+                    if (!result.success) { // ImgBB возвращает success: false при ошибке
+                        // Выводим в консоль более детальную ошибку от ImgBB
+                        throw new Error(`Ошибка ImgBB для файла ${file.name}: ${result.error.message}`);
                     }
                     const imageUrl = result.data.url;
 
-                    // ШАГ 3: Создание документа в Firestore
                     const productData = {
                         name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`,
                         price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
@@ -109,20 +110,35 @@ const AdminPage = () => {
                     await addDoc(collection(db, "products"), productData);
                     successfulUploads++;
                 } catch (error) {
-                    console.error(error);
+                    // Выводим полную ошибку в консоль для диагностики
+                    console.error(error); 
                     failedFiles.push(file.name);
                 }
             });
 
             await Promise.all(uploadPromises);
+
+            // ИЗМЕНЕНИЕ: Добавляем паузу в 1 секунду между пачками
+            if (i + chunkSize < totalFiles) {
+                setUploadProgress('Пауза 1 секунда...');
+                await delay(1000); 
+            }
         }
 
+        // ИЗМЕНЕНИЕ: Новое, компактное уведомление
         let summaryMessage = `Массовая загрузка завершена!\nУспешно создано: ${successfulUploads} товаров.`;
         if (skippedUploads > 0) {
             summaryMessage += `\nПропущено дубликатов: ${skippedUploads}.`;
         }
         if (failedFiles.length > 0) {
-            summaryMessage += `\nНе удалось загрузить: ${failedFiles.length} файлов.\nСписок: ${failedFiles.join(', ')}`;
+            summaryMessage += `\n\nНе удалось загрузить: ${failedFiles.length} файлов.`;
+            // Если файлов много, не показываем их в alert, а просим открыть консоль
+            if (failedFiles.length > 10) {
+                summaryMessage += `\nПОЛНЫЙ СПИСОК СМОТРИТЕ В КОНСОЛИ РАЗРАБОТЧИКА (F12).`;
+                console.error("Список файлов, которые не удалось загрузить:", failedFiles);
+            } else {
+                summaryMessage += `\nСписок: ${failedFiles.join(', ')}`;
+            }
         }
         alert(summaryMessage);
         
