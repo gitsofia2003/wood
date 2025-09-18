@@ -140,7 +140,7 @@ const AdminPage = () => {
                 summaryMessage += `\nСписок: ${failedFiles.join(', ')}`;
             }
         }
-        alert(summaryMessage);
+        // alert(summaryMessage);
         
         setIsUploading(false);
         cancelEdit();
