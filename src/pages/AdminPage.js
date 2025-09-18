@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where } from "firebase/firestore"; // Добавляем query и where
+import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where, writeBatch } from "firebase/firestore";
 
 import CategoryFilter, { categories } from '../components/CategoryFilter';
 import MaterialFilter from '../components/MaterialFilter';
@@ -21,7 +21,6 @@ const formatNumberWithSpaces = (value) => {
 };
 
 const AdminPage = () => {
-    // ... все useState остаются без изменений ...
     const [products, setProducts] = useState([]);
     const [newProduct, setNewProduct] = useState({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
     const [discount, setDiscount] = useState(0);
@@ -35,67 +34,133 @@ const AdminPage = () => {
     const [isDraft, setIsDraft] = useState(false);
     const [isBatchUpload, setIsBatchUpload] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
+    const [selectedPublished, setSelectedPublished] = useState([]);
+    const [selectedDrafts, setSelectedDrafts] = useState([]);
 
-    // ... все хуки и хендлеры до handleBatchSubmit остаются без изменений ...
     useEffect(() => { if (isBatchUpload) { setIsDraft(true); } }, [isBatchUpload]);
+
     useEffect(() => {
         const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
         const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, ''));
-        if (original > 0 && sale > 0 && original > sale) { setDiscount(Math.round(((original - sale) / original) * 100)); } else { setDiscount(0); }
+        if (original > 0 && sale > 0 && original > sale) {
+            setDiscount(Math.round(((original - sale) / original) * 100));
+        } else {
+            setDiscount(0);
+        }
     }, [newProduct.price, newProduct.originalPrice]);
-    const fetchProducts = async () => { setIsLoading(true); const productSnapshot = await getDocs(collection(db, "products")); const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); setProducts(productList); setIsLoading(false); };
-    useEffect(() => { fetchProducts(); }, []);
-    useEffect(() => { return () => { imagePreviews.forEach(preview => { if (preview.startsWith('blob:')) { URL.revokeObjectURL(preview); } }); }; }, [imagePreviews]);
-    const handleInputChange = (e) => { const { name, value } = e.target; if (name === 'price' || name === 'originalPrice') { setNewProduct(prevState => ({ ...prevState, [name]: formatNumberWithSpaces(value) })); } else { setNewProduct(prevState => ({ ...prevState, [name]: value })); } };
-    const handleFileChange = (e) => { const newFiles = Array.from(e.target.files); if (newFiles.length === 0) return; const newPreviews = newFiles.map(file => URL.createObjectURL(file)); setImageFiles(prevFiles => [...prevFiles, ...newFiles]); setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]); e.target.value = null; };
-    const handleRemoveImage = (indexToRemove) => { const urlToRemove = imagePreviews[indexToRemove]; if (urlToRemove.startsWith('blob:')) { const fileIndex = imagePreviews.filter(p => p.startsWith('blob:')).findIndex(p => p === urlToRemove); setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== fileIndex)); URL.revokeObjectURL(urlToRemove); } setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove)); };
-    const handleEditClick = (product) => { setEditingProduct(product); const priceForEdit = product.price ? String(product.price).replace(/[^0-9]/g, '') : ''; const originalPriceForEdit = product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : ''; const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : ''; setNewProduct({ name: product.name || '', price: formatNumberWithSpaces(priceForEdit), originalPrice: formatNumberWithSpaces(originalPriceForEdit), category: product.category || '', dimensions: dimensionsForEdit, material: product.material || '', description: product.description || '' }); setImagePreviews(product.images || []); setImageFiles([]); setIsDraft(product.status === 'draft'); setIsBatchUpload(false); window.scrollTo(0, 0); };
-    const cancelEdit = () => { setEditingProduct(null); setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' }); setImageFiles([]); setImagePreviews([]); setDiscount(0); setIsDraft(false); setIsBatchUpload(false); setUploadProgress(''); };
 
-    // ИЗМЕНЕНИЕ: Функция теперь проверяет наличие дубликатов
+    const fetchProducts = async () => {
+        setIsLoading(true);
+        const productSnapshot = await getDocs(collection(db, "products"));
+        const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProducts(productList);
+        setIsLoading(false);
+    };
+
+    useEffect(() => { fetchProducts(); }, []);
+    
+    useEffect(() => {
+        return () => {
+            imagePreviews.forEach(preview => {
+                if (preview.startsWith('blob:')) {
+                    URL.revokeObjectURL(preview);
+                }
+            });
+        };
+    }, [imagePreviews]);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'price' || name === 'originalPrice') {
+            setNewProduct(prevState => ({ ...prevState, [name]: formatNumberWithSpaces(value) }));
+        } else {
+            setNewProduct(prevState => ({ ...prevState, [name]: value }));
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const newFiles = Array.from(e.target.files);
+        if (newFiles.length === 0) return;
+        const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+        setImageFiles(prevFiles => [...prevFiles, ...newFiles]);
+        setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
+        e.target.value = null;
+    };
+
+    const handleRemoveImage = (indexToRemove) => {
+        const urlToRemove = imagePreviews[indexToRemove];
+        if (urlToRemove.startsWith('blob:')) {
+            const fileIndex = imagePreviews.filter(p => p.startsWith('blob:')).findIndex(p => p === urlToRemove);
+            setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== fileIndex));
+            URL.revokeObjectURL(urlToRemove);
+        }
+        setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove));
+    };
+
+    const handleEditClick = (product) => {
+        setEditingProduct(product);
+        const priceForEdit = product.price ? String(product.price).replace(/[^0-9]/g, '') : '';
+        const originalPriceForEdit = product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : '';
+        const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '';
+        setNewProduct({
+            name: product.name || '',
+            price: formatNumberWithSpaces(priceForEdit),
+            originalPrice: formatNumberWithSpaces(originalPriceForEdit),
+            category: product.category || '',
+            dimensions: dimensionsForEdit,
+            material: product.material || '',
+            description: product.description || ''
+        });
+        setImagePreviews(product.images || []);
+        setImageFiles([]);
+        setIsDraft(product.status === 'draft');
+        setIsBatchUpload(false);
+        window.scrollTo(0, 0);
+    };
+
+    const cancelEdit = () => {
+        setEditingProduct(null);
+        setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
+        setImageFiles([]);
+        setImagePreviews([]);
+        setDiscount(0);
+        setIsDraft(false);
+        setIsBatchUpload(false);
+        setUploadProgress('');
+    };
+
     const handleBatchSubmit = async () => {
         if (imageFiles.length === 0) {
             alert("Пожалуйста, выберите фотографии для массовой загрузки.");
             return;
         }
-
         setIsUploading(true);
         const totalFiles = imageFiles.length;
         let successfulUploads = 0;
         let skippedUploads = 0;
         const failedFiles = [];
-
-        const chunkSize = 10; // Загружаем по 10 файлов за раз
-        
-        // Функция для паузы
+        const chunkSize = 10;
         const delay = (ms) => new Promise(res => setTimeout(res, ms));
-
         for (let i = 0; i < totalFiles; i += chunkSize) {
             const chunk = imageFiles.slice(i, i + chunkSize);
             setUploadProgress(`Обработка ${i + 1}-${Math.min(i + chunkSize, totalFiles)} из ${totalFiles}...`);
-
             const uploadPromises = chunk.map(async (file) => {
                 try {
                     const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
                     const existingFileSnapshot = await getDocs(q);
-
                     if (!existingFileSnapshot.empty) {
                         console.log(`Файл ${file.name} уже существует. Пропускаем.`);
                         skippedUploads++;
                         return;
                     }
-
                     const formData = new FormData();
                     formData.append('image', file);
                     const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
                     const result = await res.json();
-
-                    if (!result.success) { // ImgBB возвращает success: false при ошибке
-                        // Выводим в консоль более детальную ошибку от ImgBB
+                    if (!result.success) {
                         throw new Error(`Ошибка ImgBB для файла ${file.name}: ${result.error.message}`);
                     }
                     const imageUrl = result.data.url;
-
                     const productData = {
                         name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`,
                         price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
@@ -110,29 +175,22 @@ const AdminPage = () => {
                     await addDoc(collection(db, "products"), productData);
                     successfulUploads++;
                 } catch (error) {
-                    // Выводим полную ошибку в консоль для диагностики
-                    console.error(error); 
+                    console.error(error);
                     failedFiles.push(file.name);
                 }
             });
-
             await Promise.all(uploadPromises);
-
-            // ИЗМЕНЕНИЕ: Добавляем паузу в 1 секунду между пачками
             if (i + chunkSize < totalFiles) {
                 setUploadProgress('Пауза 1 секунда...');
-                await delay(1000); 
+                await delay(1000);
             }
         }
-
-        // ИЗМЕНЕНИЕ: Новое, компактное уведомление
         let summaryMessage = `Массовая загрузка завершена!\nУспешно создано: ${successfulUploads} товаров.`;
         if (skippedUploads > 0) {
             summaryMessage += `\nПропущено дубликатов: ${skippedUploads}.`;
         }
         if (failedFiles.length > 0) {
             summaryMessage += `\n\nНе удалось загрузить: ${failedFiles.length} файлов.`;
-            // Если файлов много, не показываем их в alert, а просим открыть консоль
             if (failedFiles.length > 10) {
                 summaryMessage += `\nПОЛНЫЙ СПИСОК СМОТРИТЕ В КОНСОЛИ РАЗРАБОТЧИКА (F12).`;
                 console.error("Список файлов, которые не удалось загрузить:", failedFiles);
@@ -140,25 +198,151 @@ const AdminPage = () => {
                 summaryMessage += `\nСписок: ${failedFiles.join(', ')}`;
             }
         }
-        // alert(summaryMessage);
-        
+        alert(summaryMessage);
         setIsUploading(false);
         cancelEdit();
         fetchProducts();
     };
 
-    // ... остальные функции (handleSubmit, handleDeleteProduct) без изменений ...
-    const handleSubmit = async (e) => { e.preventDefault(); if (isBatchUpload) { await handleBatchSubmit(); return; } if (!isDraft) { if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) { alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры."); return; } } if (imagePreviews.length === 0) { alert("Товар должен иметь хотя бы одно изображение."); return; } setIsUploading(true); setUploadProgress('Загрузка изображений...'); try { let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : []; if (imageFiles.length > 0) { const uploadPromises = imageFiles.map(file => { const formData = new FormData(); formData.append('image', file); return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData }).then(res => res.json()); }); const uploadResults = await Promise.all(uploadPromises); const newImageUrls = uploadResults.map(result => result.data.url); imageUrls = [...imageUrls, ...newImageUrls]; } setUploadProgress('Сохранение данных...'); let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; let formattedOriginalPrice = null; if (newProduct.originalPrice) { formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, ''); formattedOriginalPrice = new Intl.NumberFormat('ru-RU').format(formattedOriginalPrice) + ' ₽'; } let formattedDimensions = newProduct.dimensions.trim(); if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) { formattedDimensions += ' см'; } const productData = { name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name, price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice, ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }), category: newProduct.category, dimensions: formattedDimensions, ...(newProduct.material && { material: newProduct.material }), ...(newProduct.description && { description: newProduct.description }), images: imageUrls, status: isDraft ? 'draft' : 'published', }; if (editingProduct) { const productRef = doc(db, "products", editingProduct.id); await updateDoc(productRef, productData); } else { await addDoc(collection(db, "products"), productData); } cancelEdit(); fetchProducts(); } catch (error) { console.error("Ошибка: ", error); alert("Произошла ошибка. Подробности в консоли."); } finally { setIsUploading(false); setUploadProgress(''); } };
-    const handleDeleteProduct = async (productId) => { if (window.confirm("Вы уверены, что хотите удалить этот товар?")) { try { await deleteDoc(doc(db, "products", productId)); fetchProducts(); } catch (error) { console.error("Ошибка при удалении товара: ", error); } } };
-    const publishedProducts = products.filter(p => { if (p.status === 'draft') return false; const categoryMatch = activeCategory === 'Все товары' || p.category === activeCategory; const materialMatch = activeMaterial === 'Все материалы' || p.material === activeMaterial; return categoryMatch && materialMatch; });
-    const draftProducts = products.filter(p => p.status === 'draft');
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (isBatchUpload) {
+            await handleBatchSubmit();
+            return;
+        }
+        if (!isDraft) {
+            if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) {
+                alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры.");
+                return;
+            }
+        }
+        if (imagePreviews.length === 0) {
+            alert("Товар должен иметь хотя бы одно изображение.");
+            return;
+        }
+        setIsUploading(true);
+        setUploadProgress('Загрузка изображений...');
+        try {
+            let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : [];
+            if (imageFiles.length > 0) {
+                const uploadPromises = imageFiles.map(file => {
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData }).then(res => res.json());
+                });
+                const uploadResults = await Promise.all(uploadPromises);
+                const newImageUrls = uploadResults.map(result => result.data.url);
+                imageUrls = [...imageUrls, ...newImageUrls];
+            }
+            setUploadProgress('Сохранение данных...');
+            let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, '');
+            formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽';
+            let formattedOriginalPrice = null;
+            if (newProduct.originalPrice) {
+                formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, '');
+                formattedOriginalPrice = new Intl.NumberFormat('ru-RU').format(formattedOriginalPrice) + ' ₽';
+            }
+            let formattedDimensions = newProduct.dimensions.trim();
+            if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
+                formattedDimensions += ' см';
+            }
+            const productData = {
+                name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name,
+                price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice,
+                ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }),
+                category: newProduct.category,
+                dimensions: formattedDimensions,
+                ...(newProduct.material && { material: newProduct.material }),
+                ...(newProduct.description && { description: newProduct.description }),
+                images: imageUrls,
+                status: isDraft ? 'draft' : 'published',
+            };
+            if (editingProduct) {
+                const productRef = doc(db, "products", editingProduct.id);
+                await updateDoc(productRef, productData);
+            } else {
+                await addDoc(collection(db, "products"), productData);
+            }
+            cancelEdit();
+            fetchProducts();
+        } catch (error) {
+            console.error("Ошибка: ", error);
+            alert("Произошла ошибка. Подробности в консоли.");
+        } finally {
+            setIsUploading(false);
+            setUploadProgress('');
+        }
+    };
+    
+    const handleDeleteProduct = async (productId) => {
+        if (window.confirm("Вы уверены, что хотите удалить этот товар?")) {
+            try {
+                await deleteDoc(doc(db, "products", productId));
+                fetchProducts();
+            } catch (error) {
+                console.error("Ошибка при удалении товара: ", error);
+            }
+        }
+    };
+    
+    const handleToggleSelection = (id, listType) => {
+        const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
+        setSelection(prev => 
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
 
+    const handleSelectAll = (listType, productList) => {
+        const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
+        const currentSelection = listType === 'published' ? selectedPublished : selectedDrafts;
+        if (currentSelection.length === productList.length && productList.length > 0) {
+            setSelection([]);
+        } else {
+            setSelection(productList.map(p => p.id));
+        }
+    };
+    
+    const handleUnpublishSelected = async () => {
+        if (selectedPublished.length === 0) return;
+        if (!window.confirm(`Вы уверены, что хотите снять с публикации ${selectedPublished.length} товаров? Они будут перемещены в черновик.`)) return;
+        const batch = writeBatch(db);
+        selectedPublished.forEach(id => {
+            const docRef = doc(db, "products", id);
+            batch.update(docRef, { status: "draft" });
+        });
+        await batch.commit();
+        setSelectedPublished([]);
+        fetchProducts();
+    };
+
+    const handleDeleteSelected = async (listType) => {
+        const selection = listType === 'published' ? selectedPublished : selectedDrafts;
+        const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
+        if (selection.length === 0) return;
+        if (!window.confirm(`Вы уверены, что хотите удалить ${selection.length} товаров? Это действие необратимо.`)) return;
+        const batch = writeBatch(db);
+        selection.forEach(id => {
+            const docRef = doc(db, "products", id);
+            batch.delete(docRef);
+        });
+        await batch.commit();
+        setSelection([]);
+        fetchProducts();
+    };
+
+    const publishedProducts = products.filter(p => {
+        if (p.status === 'draft') return false;
+        const categoryMatch = activeCategory === 'Все товары' || p.category === activeCategory;
+        const materialMatch = activeMaterial === 'Все материалы' || p.material === activeMaterial;
+        return categoryMatch && materialMatch;
+    });
+
+    const draftProducts = products.filter(p => p.status === 'draft');
 
     return (
         <div className="container mx-auto px-6 py-12">
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
-                {/* ... форма остается без изменений, кроме select для материалов ... */}
                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded" />
@@ -212,42 +396,78 @@ const AdminPage = () => {
             </div>
             
             <div>
-                {/* ... список товаров остается без изменений ... */}
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
                 <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
                 <div className="mb-6 flex justify-center"><MaterialFilter availableMaterials={availableMaterials} activeMaterial={activeMaterial} setActiveMaterial={setActiveMaterial} /></div>
+                
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-xl font-semibold mb-4 border-b pb-2">Публикации ({publishedProducts.length})</h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-semibold">Публикации ({publishedProducts.length})</h3>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => handleSelectAll('published', publishedProducts)} className="text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400" disabled={publishedProducts.length === 0}>
+                                        {selectedPublished.length === publishedProducts.length && publishedProducts.length > 0 ? 'Снять выделение' : 'Выделить все'}
+                                    </button>
+                                    {selectedPublished.length > 0 && (
+                                        <>
+                                            <button onClick={handleUnpublishSelected} className="text-sm font-semibold text-yellow-600 hover:text-yellow-800">Снять с публикации</button>
+                                            <button onClick={() => handleDeleteSelected('published')} className="text-sm font-semibold text-red-600 hover:text-red-800">Удалить ({selectedPublished.length})</button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            
                             {publishedProducts.length > 0 ? (
                                 <div className="space-y-4">
                                     {publishedProducts.map(product => (
                                         <div key={product.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm">
-                                            <div className="flex items-center gap-4">
-                                                <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white" />
+                                            <div className="flex items-center gap-4 flex-grow">
+                                                <input type="checkbox" className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+                                                    checked={selectedPublished.includes(product.id)}
+                                                    onChange={() => handleToggleSelection(product.id, 'published')}
+                                                />
+                                                <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white ml-4" />
                                                 <div><p className="font-bold">{product.name}</p><p className="text-sm text-gray-600">{product.category} - {product.price}</p></div>
                                             </div>
-                                            <div className='flex gap-4'><button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button><button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button></div>
+                                            <div className='flex gap-4 flex-shrink-0'>
+                                                <button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button>
+                                                <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (<p className="text-gray-500">Нет опубликованных товаров, соответствующих фильтрам.</p>)}
                         </div>
+
                         <div>
-                            <h3 className="text-xl font-semibold mb-4 border-b pb-2">Черновик ({draftProducts.length})</h3>
+                             <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-semibold">Черновик ({draftProducts.length})</h3>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => handleSelectAll('drafts', draftProducts)} className="text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400" disabled={draftProducts.length === 0}>
+                                         {selectedDrafts.length === draftProducts.length && draftProducts.length > 0 ? 'Снять выделение' : 'Выделить все'}
+                                    </button>
+                                    {selectedDrafts.length > 0 && (
+                                        <button onClick={() => handleDeleteSelected('drafts')} className="text-sm font-semibold text-red-600 hover:text-red-800">Удалить ({selectedDrafts.length})</button>
+                                    )}
+                                </div>
+                            </div>
                              {draftProducts.length > 0 ? (
                                 <div className="space-y-4">
                                     {draftProducts.map(product => (
                                         <div key={product.id} className="flex items-center justify-between bg-yellow-50 p-4 rounded-lg shadow-sm border-l-4 border-yellow-400">
-                                            <div className="flex items-center gap-4">
-                                                <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white" />
+                                            <div className="flex items-center gap-4 flex-grow">
+                                                <input type="checkbox" className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+                                                    checked={selectedDrafts.includes(product.id)}
+                                                    onChange={() => handleToggleSelection(product.id, 'drafts')}
+                                                />
+                                                <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white ml-4" />
                                                 <div>
                                                     <div className="flex items-center gap-2"><p className="font-bold">{product.name}</p><span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Черновик</span></div>
                                                     <p className="text-sm text-gray-600">{product.category || 'Нет категории'} - {product.price}</p>
                                                 </div>
                                             </div>
-                                            <div className='flex gap-4'><button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button><button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button></div>
+                                            <div className='flex gap-4 flex-shrink-0'><button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button><button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button></div>
                                         </div>
                                     ))}
                                 </div>
