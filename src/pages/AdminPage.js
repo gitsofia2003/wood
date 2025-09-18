@@ -1,5 +1,3 @@
-// src/pages/AdminPage.js
-
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where, writeBatch } from "firebase/firestore";
@@ -18,6 +16,16 @@ const formatNumberWithSpaces = (value) => {
     if (!value) return '';
     const numericValue = value.replace(/[^0-9]/g, '');
     return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
+// ИЗМЕНЕНИЕ 1: Создаем единую функцию для обработки ошибок Firestore
+const handleFirestoreError = (error) => {
+    if (error.code === 'permission-denied') {
+        alert("Сорянчик :( У вас нет прав на это действие.");
+    } else {
+        console.error("Произошла ошибка Firestore: ", error);
+        alert("Произошла непредвиденная ошибка. Подробности в консоли.");
+    }
 };
 
 const AdminPage = () => {
@@ -266,8 +274,7 @@ const AdminPage = () => {
             cancelEdit();
             fetchProducts();
         } catch (error) {
-            console.error("Ошибка: ", error);
-            alert("Произошла ошибка. Подробности в консоли.");
+            handleFirestoreError(error);
         } finally {
             setIsUploading(false);
             setUploadProgress('');
@@ -280,7 +287,7 @@ const AdminPage = () => {
                 await deleteDoc(doc(db, "products", productId));
                 fetchProducts();
             } catch (error) {
-                console.error("Ошибка при удалении товара: ", error);
+                handleFirestoreError(error);
             }
         }
     };
@@ -305,14 +312,18 @@ const AdminPage = () => {
     const handleUnpublishSelected = async () => {
         if (selectedPublished.length === 0) return;
         if (!window.confirm(`Вы уверены, что хотите снять с публикации ${selectedPublished.length} товаров? Они будут перемещены в черновик.`)) return;
-        const batch = writeBatch(db);
-        selectedPublished.forEach(id => {
-            const docRef = doc(db, "products", id);
-            batch.update(docRef, { status: "draft" });
-        });
-        await batch.commit();
-        setSelectedPublished([]);
-        fetchProducts();
+        try {
+            const batch = writeBatch(db);
+            selectedPublished.forEach(id => {
+                const docRef = doc(db, "products", id);
+                batch.update(docRef, { status: "draft" });
+            });
+            await batch.commit();
+            setSelectedPublished([]);
+            fetchProducts();
+        } catch (error) {
+            handleFirestoreError(error);
+        }
     };
 
     const handleDeleteSelected = async (listType) => {
@@ -320,14 +331,18 @@ const AdminPage = () => {
         const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
         if (selection.length === 0) return;
         if (!window.confirm(`Вы уверены, что хотите удалить ${selection.length} товаров? Это действие необратимо.`)) return;
-        const batch = writeBatch(db);
-        selection.forEach(id => {
-            const docRef = doc(db, "products", id);
-            batch.delete(docRef);
-        });
-        await batch.commit();
-        setSelection([]);
-        fetchProducts();
+        try {
+            const batch = writeBatch(db);
+            selection.forEach(id => {
+                const docRef = doc(db, "products", id);
+                batch.delete(docRef);
+            });
+            await batch.commit();
+            setSelection([]);
+            fetchProducts();
+        } catch (error) {
+            handleFirestoreError(error);
+        }
     };
 
     const publishedProducts = products.filter(p => {
