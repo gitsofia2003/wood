@@ -2,16 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where } from "firebase/firestore"; // Добавляем query и where
 
 import CategoryFilter, { categories } from '../components/CategoryFilter';
 import MaterialFilter from '../components/MaterialFilter';
 
 const IMGBB_API_KEY = "a3b4e8feb7a0fba8a78002fdb5304fc0";
 const availableMaterials = [
-    { name: "Вишня", color: "#6D282B" }, // темно-вишневый
-    { name: "Бук", color: "#DAB88F" },   // светло-бежевый
-    { name: "Сандал", color: "#B07953" } // теплый коричневый
+    { name: "Вишня", color: "#6D282B" },
+    { name: "Бук", color: "#DAB88F" },
+    { name: "Сандал", color: "#B07953" }
 ];
 
 const formatNumberWithSpaces = (value) => {
@@ -21,10 +21,9 @@ const formatNumberWithSpaces = (value) => {
 };
 
 const AdminPage = () => {
+    // ... все useState остаются без изменений ...
     const [products, setProducts] = useState([]);
-    const [newProduct, setNewProduct] = useState({
-        name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: ''
-    });
+    const [newProduct, setNewProduct] = useState({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
     const [discount, setDiscount] = useState(0);
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
@@ -37,242 +36,113 @@ const AdminPage = () => {
     const [isBatchUpload, setIsBatchUpload] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
 
-    useEffect(() => {
-        if (isBatchUpload) {
-            setIsDraft(true);
-        }
-    }, [isBatchUpload]);
-
+    // ... все хуки и хендлеры до handleBatchSubmit остаются без изменений ...
+    useEffect(() => { if (isBatchUpload) { setIsDraft(true); } }, [isBatchUpload]);
     useEffect(() => {
         const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
         const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, ''));
-        if (original > 0 && sale > 0 && original > sale) {
-            setDiscount(Math.round(((original - sale) / original) * 100));
-        } else {
-            setDiscount(0);
-        }
+        if (original > 0 && sale > 0 && original > sale) { setDiscount(Math.round(((original - sale) / original) * 100)); } else { setDiscount(0); }
     }, [newProduct.price, newProduct.originalPrice]);
-
-    const fetchProducts = async () => {
-        setIsLoading(true);
-        const productSnapshot = await getDocs(collection(db, "products"));
-        const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setProducts(productList);
-        setIsLoading(false);
-    };
-
+    const fetchProducts = async () => { setIsLoading(true); const productSnapshot = await getDocs(collection(db, "products")); const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); setProducts(productList); setIsLoading(false); };
     useEffect(() => { fetchProducts(); }, []);
-    
-    useEffect(() => {
-        return () => {
-            imagePreviews.forEach(preview => {
-                if (preview.startsWith('blob:')) {
-                    URL.revokeObjectURL(preview);
-                }
-            });
-        };
-    }, [imagePreviews]);
+    useEffect(() => { return () => { imagePreviews.forEach(preview => { if (preview.startsWith('blob:')) { URL.revokeObjectURL(preview); } }); }; }, [imagePreviews]);
+    const handleInputChange = (e) => { const { name, value } = e.target; if (name === 'price' || name === 'originalPrice') { setNewProduct(prevState => ({ ...prevState, [name]: formatNumberWithSpaces(value) })); } else { setNewProduct(prevState => ({ ...prevState, [name]: value })); } };
+    const handleFileChange = (e) => { const newFiles = Array.from(e.target.files); if (newFiles.length === 0) return; const newPreviews = newFiles.map(file => URL.createObjectURL(file)); setImageFiles(prevFiles => [...prevFiles, ...newFiles]); setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]); e.target.value = null; };
+    const handleRemoveImage = (indexToRemove) => { const urlToRemove = imagePreviews[indexToRemove]; if (urlToRemove.startsWith('blob:')) { const fileIndex = imagePreviews.filter(p => p.startsWith('blob:')).findIndex(p => p === urlToRemove); setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== fileIndex)); URL.revokeObjectURL(urlToRemove); } setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove)); };
+    const handleEditClick = (product) => { setEditingProduct(product); const priceForEdit = product.price ? String(product.price).replace(/[^0-9]/g, '') : ''; const originalPriceForEdit = product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : ''; const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : ''; setNewProduct({ name: product.name || '', price: formatNumberWithSpaces(priceForEdit), originalPrice: formatNumberWithSpaces(originalPriceForEdit), category: product.category || '', dimensions: dimensionsForEdit, material: product.material || '', description: product.description || '' }); setImagePreviews(product.images || []); setImageFiles([]); setIsDraft(product.status === 'draft'); setIsBatchUpload(false); window.scrollTo(0, 0); };
+    const cancelEdit = () => { setEditingProduct(null); setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' }); setImageFiles([]); setImagePreviews([]); setDiscount(0); setIsDraft(false); setIsBatchUpload(false); setUploadProgress(''); };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        if (name === 'price' || name === 'originalPrice') {
-            setNewProduct(prevState => ({ ...prevState, [name]: formatNumberWithSpaces(value) }));
-        } else {
-            setNewProduct(prevState => ({ ...prevState, [name]: value }));
-        }
-    };
-
-    const handleFileChange = (e) => {
-        const newFiles = Array.from(e.target.files);
-        if (newFiles.length === 0) return;
-        const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-        setImageFiles(prevFiles => [...prevFiles, ...newFiles]);
-        setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
-        e.target.value = null;
-    };
-
-    const handleRemoveImage = (indexToRemove) => {
-        const urlToRemove = imagePreviews[indexToRemove];
-        if (urlToRemove.startsWith('blob:')) {
-            const fileIndex = imagePreviews.filter(p => p.startsWith('blob:')).findIndex(p => p === urlToRemove);
-            setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== fileIndex));
-            URL.revokeObjectURL(urlToRemove);
-        }
-        setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove));
-    };
-
-    const handleEditClick = (product) => {
-        setEditingProduct(product);
-        const priceForEdit = product.price ? String(product.price).replace(/[^0-9]/g, '') : '';
-        const originalPriceForEdit = product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : '';
-        const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '';
-        setNewProduct({
-            name: product.name || '',
-            price: formatNumberWithSpaces(priceForEdit),
-            originalPrice: formatNumberWithSpaces(originalPriceForEdit),
-            category: product.category || '',
-            dimensions: dimensionsForEdit,
-            material: product.material || '',
-            description: product.description || ''
-        });
-        setImagePreviews(product.images || []);
-        setImageFiles([]);
-        setIsDraft(product.status === 'draft');
-        setIsBatchUpload(false);
-        window.scrollTo(0, 0);
-    };
-
-    const cancelEdit = () => {
-        setEditingProduct(null);
-        setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
-        setImageFiles([]);
-        setImagePreviews([]);
-        setDiscount(0);
-        setIsDraft(false);
-        setIsBatchUpload(false);
-        setUploadProgress('');
-    };
-
+    // ИЗМЕНЕНИЕ: Функция теперь проверяет наличие дубликатов
     const handleBatchSubmit = async () => {
         if (imageFiles.length === 0) {
             alert("Пожалуйста, выберите фотографии для массовой загрузки.");
             return;
         }
-        setIsUploading(true);
-        let createdCount = 0;
-        try {
-            for (let i = 0; i < imageFiles.length; i++) {
-                const file = imageFiles[i];
-                setUploadProgress(`Загрузка ${i + 1} из ${imageFiles.length}...`);
-                const formData = new FormData();
-                formData.append('image', file);
-                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
-                const result = await res.json();
-                if (!result.data || !result.data.url) {
-                    console.warn(`Не удалось загрузить файл ${file.name}, пропускаем.`);
-                    continue;
-                }
-                const imageUrl = result.data.url;
-                const productData = {
-                    name: newProduct.name ? `${newProduct.name} #${i + 1}` : `ЧЕРНОВИК: Товар #${Date.now() + i}`,
-                    price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
-                    category: newProduct.category || '',
-                    description: newProduct.description || '',
-                    dimensions: newProduct.dimensions || '',
-                    material: newProduct.material || '',
-                    images: [imageUrl],
-                    status: 'draft',
-                };
-                await addDoc(collection(db, "products"), productData);
-                createdCount++;
-            }
-            alert(`Массовая загрузка завершена! Успешно создано ${createdCount} товаров.`);
-        } catch (error) {
-            console.error("Ошибка при массовой загрузке: ", error);
-            alert(`Произошла ошибка. Успешно создано ${createdCount} товаров. Подробности в консоли.`);
-        } finally {
-            setIsUploading(false);
-            cancelEdit();
-            fetchProducts();
-        }
-    };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (isBatchUpload) {
-            await handleBatchSubmit();
-            return;
-        }
-        if (!isDraft) {
-            if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) {
-                alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры.");
-                return;
-            }
-        }
-        if (imagePreviews.length === 0) {
-            alert("Товар должен иметь хотя бы одно изображение.");
-            return;
-        }
         setIsUploading(true);
-        setUploadProgress('Загрузка изображений...');
-        try {
-            let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : [];
-            if (imageFiles.length > 0) {
-                const uploadPromises = imageFiles.map(file => {
+        const totalFiles = imageFiles.length;
+        let successfulUploads = 0;
+        let skippedUploads = 0;
+        const failedFiles = [];
+        
+        const chunkSize = 10;
+
+        for (let i = 0; i < totalFiles; i += chunkSize) {
+            const chunk = imageFiles.slice(i, i + chunkSize);
+            setUploadProgress(`Обработка ${i + 1}-${Math.min(i + chunkSize, totalFiles)} из ${totalFiles}...`);
+
+            const uploadPromises = chunk.map(async (file) => {
+                try {
+                    // ШАГ 1: Проверка на дубликат в Firestore
+                    const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
+                    const existingFileSnapshot = await getDocs(q);
+
+                    if (!existingFileSnapshot.empty) {
+                        console.log(`Файл ${file.name} уже существует. Пропускаем.`);
+                        skippedUploads++;
+                        return; // Просто выходим, если файл уже есть
+                    }
+
+                    // ШАГ 2: Загрузка на ImgBB
                     const formData = new FormData();
                     formData.append('image', file);
-                    return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData }).then(res => res.json());
-                });
-                const uploadResults = await Promise.all(uploadPromises);
-                const newImageUrls = uploadResults.map(result => result.data.url);
-                imageUrls = [...imageUrls, ...newImageUrls];
-            }
-            setUploadProgress('Сохранение данных...');
-            let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, '');
-            formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽';
-            let formattedOriginalPrice = null;
-            if (newProduct.originalPrice) {
-                formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, '');
-                formattedOriginalPrice = new Intl.NumberFormat('ru-RU').format(formattedOriginalPrice) + ' ₽';
-            }
-            let formattedDimensions = newProduct.dimensions.trim();
-            if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
-                formattedDimensions += ' см';
-            }
-            const productData = {
-                name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name,
-                price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice,
-                ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }),
-                category: newProduct.category,
-                dimensions: formattedDimensions,
-                ...(newProduct.material && { material: newProduct.material }),
-                ...(newProduct.description && { description: newProduct.description }),
-                images: imageUrls,
-                status: isDraft ? 'draft' : 'published',
-            };
-            if (editingProduct) {
-                const productRef = doc(db, "products", editingProduct.id);
-                await updateDoc(productRef, productData);
-            } else {
-                await addDoc(collection(db, "products"), productData);
-            }
-            cancelEdit();
-            fetchProducts();
-        } catch (error) {
-            console.error("Ошибка: ", error);
-            alert("Произошла ошибка. Подробности в консоли.");
-        } finally {
-            setIsUploading(false);
-            setUploadProgress('');
+                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                    const result = await res.json();
+
+                    if (!result.data || !result.data.url) {
+                        throw new Error(`Не удалось загрузить файл: ${file.name}`);
+                    }
+                    const imageUrl = result.data.url;
+
+                    // ШАГ 3: Создание документа в Firestore
+                    const productData = {
+                        name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`,
+                        price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
+                        category: newProduct.category || '',
+                        description: newProduct.description || '',
+                        dimensions: newProduct.dimensions || '',
+                        material: newProduct.material || '',
+                        images: [imageUrl],
+                        status: 'draft',
+                        originalFilename: file.name
+                    };
+                    await addDoc(collection(db, "products"), productData);
+                    successfulUploads++;
+                } catch (error) {
+                    console.error(error);
+                    failedFiles.push(file.name);
+                }
+            });
+
+            await Promise.all(uploadPromises);
         }
+
+        let summaryMessage = `Массовая загрузка завершена!\nУспешно создано: ${successfulUploads} товаров.`;
+        if (skippedUploads > 0) {
+            summaryMessage += `\nПропущено дубликатов: ${skippedUploads}.`;
+        }
+        if (failedFiles.length > 0) {
+            summaryMessage += `\nНе удалось загрузить: ${failedFiles.length} файлов.\nСписок: ${failedFiles.join(', ')}`;
+        }
+        alert(summaryMessage);
+        
+        setIsUploading(false);
+        cancelEdit();
+        fetchProducts();
     };
 
-    const handleDeleteProduct = async (productId) => {
-        if (window.confirm("Вы уверены, что хотите удалить этот товар?")) {
-            try {
-                await deleteDoc(doc(db, "products", productId));
-                fetchProducts();
-            } catch (error) {
-                console.error("Ошибка при удалении товара: ", error);
-            }
-        }
-    };
-
-    // Новая, правильная логика
-    const publishedProducts = products.filter(p => {
-        if (p.status === 'draft') return false; // Сразу исключаем черновики
-        const categoryMatch = activeCategory === 'Все товары' || p.category === activeCategory;
-        const materialMatch = activeMaterial === 'Все материалы' || p.material === activeMaterial;
-        return categoryMatch && materialMatch;
-    });
-
-    // А черновики просто берем из общего списка, без фильтров
+    // ... остальные функции (handleSubmit, handleDeleteProduct) без изменений ...
+    const handleSubmit = async (e) => { e.preventDefault(); if (isBatchUpload) { await handleBatchSubmit(); return; } if (!isDraft) { if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) { alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры."); return; } } if (imagePreviews.length === 0) { alert("Товар должен иметь хотя бы одно изображение."); return; } setIsUploading(true); setUploadProgress('Загрузка изображений...'); try { let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : []; if (imageFiles.length > 0) { const uploadPromises = imageFiles.map(file => { const formData = new FormData(); formData.append('image', file); return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData }).then(res => res.json()); }); const uploadResults = await Promise.all(uploadPromises); const newImageUrls = uploadResults.map(result => result.data.url); imageUrls = [...imageUrls, ...newImageUrls]; } setUploadProgress('Сохранение данных...'); let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; let formattedOriginalPrice = null; if (newProduct.originalPrice) { formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, ''); formattedOriginalPrice = new Intl.NumberFormat('ru-RU').format(formattedOriginalPrice) + ' ₽'; } let formattedDimensions = newProduct.dimensions.trim(); if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) { formattedDimensions += ' см'; } const productData = { name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name, price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice, ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }), category: newProduct.category, dimensions: formattedDimensions, ...(newProduct.material && { material: newProduct.material }), ...(newProduct.description && { description: newProduct.description }), images: imageUrls, status: isDraft ? 'draft' : 'published', }; if (editingProduct) { const productRef = doc(db, "products", editingProduct.id); await updateDoc(productRef, productData); } else { await addDoc(collection(db, "products"), productData); } cancelEdit(); fetchProducts(); } catch (error) { console.error("Ошибка: ", error); alert("Произошла ошибка. Подробности в консоли."); } finally { setIsUploading(false); setUploadProgress(''); } };
+    const handleDeleteProduct = async (productId) => { if (window.confirm("Вы уверены, что хотите удалить этот товар?")) { try { await deleteDoc(doc(db, "products", productId)); fetchProducts(); } catch (error) { console.error("Ошибка при удалении товара: ", error); } } };
+    const publishedProducts = products.filter(p => { if (p.status === 'draft') return false; const categoryMatch = activeCategory === 'Все товары' || p.category === activeCategory; const materialMatch = activeMaterial === 'Все материалы' || p.material === activeMaterial; return categoryMatch && materialMatch; });
     const draftProducts = products.filter(p => p.status === 'draft');
+
 
     return (
         <div className="container mx-auto px-6 py-12">
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
+                {/* ... форма остается без изменений, кроме select для материалов ... */}
                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded" />
@@ -285,7 +155,6 @@ const AdminPage = () => {
                         {categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))}
                     </select>
                     <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded" />
-
                     <select name="material" value={newProduct.material} onChange={handleInputChange} className="p-2 border rounded">
                         <option value="">Материал (необязательно)</option>
                         {availableMaterials.map(materialObj => (
@@ -327,10 +196,10 @@ const AdminPage = () => {
             </div>
             
             <div>
+                {/* ... список товаров остается без изменений ... */}
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
                 <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
                 <div className="mb-6 flex justify-center"><MaterialFilter availableMaterials={availableMaterials} activeMaterial={activeMaterial} setActiveMaterial={setActiveMaterial} /></div>
-                
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-8">
                         <div>
@@ -341,23 +210,14 @@ const AdminPage = () => {
                                         <div key={product.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm">
                                             <div className="flex items-center gap-4">
                                                 <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white" />
-                                                <div>
-                                                    <p className="font-bold">{product.name}</p>
-                                                    <p className="text-sm text-gray-600">{product.category} - {product.price}</p>
-                                                </div>
+                                                <div><p className="font-bold">{product.name}</p><p className="text-sm text-gray-600">{product.category} - {product.price}</p></div>
                                             </div>
-                                            <div className='flex gap-4'>
-                                                <button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button>
-                                                <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
-                                            </div>
+                                            <div className='flex gap-4'><button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button><button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button></div>
                                         </div>
                                     ))}
                                 </div>
-                            ) : (
-                                <p className="text-gray-500">Нет опубликованных товаров, соответствующих фильтрам.</p>
-                            )}
+                            ) : (<p className="text-gray-500">Нет опубликованных товаров, соответствующих фильтрам.</p>)}
                         </div>
-
                         <div>
                             <h3 className="text-xl font-semibold mb-4 border-b pb-2">Черновик ({draftProducts.length})</h3>
                              {draftProducts.length > 0 ? (
@@ -367,23 +227,15 @@ const AdminPage = () => {
                                             <div className="flex items-center gap-4">
                                                 <img src={product.images ? product.images[0] : 'https://via.placeholder.com/150'} alt={product.name} className="w-16 h-16 object-contain rounded-md bg-white" />
                                                 <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="font-bold">{product.name}</p>
-                                                        <span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Черновик</span>
-                                                    </div>
+                                                    <div className="flex items-center gap-2"><p className="font-bold">{product.name}</p><span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Черновик</span></div>
                                                     <p className="text-sm text-gray-600">{product.category || 'Нет категории'} - {product.price}</p>
                                                 </div>
                                             </div>
-                                            <div className='flex gap-4'>
-                                                <button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button>
-                                                <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button>
-                                            </div>
+                                            <div className='flex gap-4'><button onClick={() => handleEditClick(product)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button><button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button></div>
                                         </div>
                                     ))}
                                 </div>
-                            ) : (
-                                 <p className="text-gray-500">Нет черновиков, соответствующих фильтрам.</p>
-                            )}
+                            ) : ( <p className="text-gray-500">Нет черновиков.</p> )}
                         </div>
                     </div>
                 )}

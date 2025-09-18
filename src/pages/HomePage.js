@@ -10,9 +10,6 @@ import CategoryFilter from '../components/CategoryFilter';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-// ===================================================================================
-// 1. Компоненты для кастомных стрелок (ТОЛЬКО для десктопа)
-// ===================================================================================
 function NextArrow(props) {
     const { className, onClick } = props;
     return (
@@ -35,18 +32,12 @@ function PrevArrow(props) {
     );
 }
 
-// ===================================================================================
-// 2. Данные для главного слайдера (Используются и в десктопной, и в мобильной версии)
-// ===================================================================================
 const mainSlidesData = [
     { type: 'simple', id: 'banner1', bgColor: 'bg-blue-100', title: 'Мебель на отлично!', subtitle: 'Всё для учёбы и работы', image: '/images/banner-1-bg.jpg' },
     { type: 'nested-horizontal', id: 'banner2', bgColor: 'bg-orange-100', title: 'Уют в каждой комнате', subtitle: 'Листайте, чтобы увидеть больше', nestedSlides: [{ id: 'b2s1', image: '/images/nested-1.jpg' }, { id: 'b2s2', image: '/images/nested-2.jpg' }, { id: 'b2s3', image: '/images/nested-3.jpg' }] },
     { type: 'nested-vertical', id: 'banner3', bgColor: 'bg-teal-100', title: 'Новая коллекция', subtitle: 'Вертикальный взгляд на стиль', nestedSlides: [{ id: 'b3s1', image: '/images/nested-vertical-1.jpg' }, { id: 'b3s2', image: '/images/nested-vertical-2.jpg' }, { id: 'b3s3', image: '/images/nested-vertical-3.jpg' }] }
 ];
 
-// ===================================================================================
-// 3. Кастомный хук `useIsMobile`
-// ===================================================================================
 const useIsMobile = (breakpoint = 768) => {
     const [isMobile, setIsMobile] = useState(false);
     const handleResize = useCallback(() => {
@@ -62,17 +53,9 @@ const useIsMobile = (breakpoint = 768) => {
     return isMobile;
 };
 
-// ===================================================================================
-// 4. Основной компонент HomePage
-// ===================================================================================
 const HomePage = () => {
     const isMobile = useIsMobile();
 
-    // ===============================================================================
-    // ОБЩИЕ ХУКИ ДЛЯ ДЕСКТОПА И МОБИЛЬНОГО (объявлены на верхнем уровне)
-    // ===============================================================================
-
-    // Хуки и состояния для ДЕСКТОПНОЙ версии
     const mainSliderRef = useRef(null);
     const nestedHSliderRef = useRef(null);
     const nestedVSliderRef = useRef(null);
@@ -80,16 +63,11 @@ const HomePage = () => {
     const [nestedSlideIndex, setNestedSlideIndex] = useState(0);
     const [nestedVerticalSlideIndex, setNestedVerticalSlideIndex] = useState(0);
 
-    // Хуки и состояния для МОБИЛЬНОЙ версии
     const mobileMainSliderRef = useRef(null);
     const [mobileCurrentBannerIndex, setMobileCurrentBannerIndex] = useState(0);
     const mobileNestedHSliderRef = useRef(null);
     const mobileNestedVSliderRef = useRef(null);
 
-
-    // ===============================================================================
-    // useEffect'ы для ДЕСКТОПНОЙ версии (не выполняются, если isMobile = true)
-    // ===============================================================================
     useEffect(() => {
         if (isMobile) return;
         const currentBanner = mainSlidesData[currentBannerIndex];
@@ -114,9 +92,6 @@ const HomePage = () => {
         }
     }, [currentBannerIndex, isMobile]);
 
-    // ===============================================================================
-    // useEffect'ы для МОБИЛЬНОЙ версии (НЕ выполняются, если isMobile = false)
-    // ===============================================================================
     useEffect(() => {
         if (!isMobile) return; // Пропустить, если НЕ мобильная версия
 
@@ -142,10 +117,7 @@ const HomePage = () => {
                  }, 4000);
              }
         }
-        
-        // Управление автопроигрыванием ВЛОЖЕННЫХ мобильных слайдеров
-        // При переключении главного баннера, принудительно сбрасываем вложенный слайдер на первый слайд
-        // и затем запускаем/останавливаем autoplay.
+
         if (mobileNestedHSliderRef.current) {
             if (mobileCurrentBannerIndex === 1) {
                 mobileNestedHSliderRef.current.slickGoTo(0, true); // Сброс на первый слайд
@@ -166,10 +138,6 @@ const HomePage = () => {
         return () => clearTimeout(mainMobileTimerId); // Очистка главного мобильного таймера
     }, [mobileCurrentBannerIndex, isMobile]); // Зависит от индекса активного мобильного баннера и режима
 
-
-    // ===============================================================================
-    // Настройки для ДЕСКТОПНЫХ слайдеров (не изменялись)
-    // ===============================================================================
     const mainSliderSettings = {
         dots: true,
         infinite: true,
