@@ -5,7 +5,7 @@ import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where, w
 import CategoryFilter, { categories } from '../components/CategoryFilter';
 import MaterialFilter from '../components/MaterialFilter';
 
-const IMGBB_API_KEY = "86dcff45694e1120e4b0fd274e07f0af";
+const IMGBB_API_KEY = "95cdb40ce8de0da01cde3f489881e201";
 const availableMaterials = [
     { name: "Вишня", color: "#6D282B" },
     { name: "Бук", color: "#DAB88F" },
@@ -21,7 +21,7 @@ const formatNumberWithSpaces = (value) => {
 // ИЗМЕНЕНИЕ 1: Создаем единую функцию для обработки ошибок Firestore
 const handleFirestoreError = (error) => {
     if (error.code === 'permission-denied') {
-        alert("Сорянчик :( У вас нет прав на это действие.");
+        alert("Че самый умный? :) ");
     } else {
         console.error("Произошла ошибка Firestore: ", error);
         alert("Произошла непредвиденная ошибка. Подробности в консоли.");
