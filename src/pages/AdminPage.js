@@ -5,7 +5,7 @@ import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where, w
 import CategoryFilter, { categories } from '../components/CategoryFilter';
 import MaterialFilter from '../components/MaterialFilter';
 
-const IMGBB_API_KEY = "0a0eefa2785b89a557154a3a43a8e9a2";
+const IMGBB_API_KEY = "86dcff45694e1120e4b0fd274e07f0af";
 const availableMaterials = [
     { name: "Вишня", color: "#6D282B" },
     { name: "Бук", color: "#DAB88F" },
