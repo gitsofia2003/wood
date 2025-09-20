@@ -137,62 +137,74 @@ const AdminPage = () => {
         setUploadProgress('');
     };
 
+   // ЗАМЕНИ ЭТУ ФУНКЦИЮ В ФАЙЛЕ AdminPage.js
+
     const handleBatchSubmit = async () => {
         if (imageFiles.length === 0) {
             alert("Пожалуйста, выберите фотографии для массовой загрузки.");
             return;
         }
+
         setIsUploading(true);
         const totalFiles = imageFiles.length;
         let successfulUploads = 0;
         let skippedUploads = 0;
         const failedFiles = [];
-        const chunkSize = 10;
+        
+        // Функция для паузы
         const delay = (ms) => new Promise(res => setTimeout(res, ms));
-        for (let i = 0; i < totalFiles; i += chunkSize) {
-            const chunk = imageFiles.slice(i, i + chunkSize);
-            setUploadProgress(`Обработка ${i + 1}-${Math.min(i + chunkSize, totalFiles)} из ${totalFiles}...`);
-            const uploadPromises = chunk.map(async (file) => {
-                try {
-                    const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
-                    const existingFileSnapshot = await getDocs(q);
-                    if (!existingFileSnapshot.empty) {
-                        console.log(`Файл ${file.name} уже существует. Пропускаем.`);
-                        skippedUploads++;
-                        return;
-                    }
-                    const formData = new FormData();
-                    formData.append('image', file);
-                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
-                    const result = await res.json();
-                    if (!result.success) {
-                        throw new Error(`Ошибка ImgBB для файла ${file.name}: ${result.error.message}`);
-                    }
-                    const imageUrl = result.data.url;
-                    const productData = {
-                        name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`,
-                        price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
-                        category: newProduct.category || '',
-                        description: newProduct.description || '',
-                        dimensions: newProduct.dimensions || '',
-                        material: newProduct.material || '',
-                        images: [imageUrl],
-                        status: 'draft',
-                        originalFilename: file.name
-                    };
-                    await addDoc(collection(db, "products"), productData);
-                    successfulUploads++;
-                } catch (error) {
-                    console.error(error);
-                    failedFiles.push(file.name);
+
+        // ИЗМЕНЕНИЕ: Убираем "пачки" и используем простой цикл for...of для последовательной загрузки
+        for (const [index, file] of imageFiles.entries()) {
+            setUploadProgress(`Загрузка ${index + 1} из ${totalFiles}...`);
+            
+            try {
+                // 1. Проверка на дубликат (остается)
+                const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
+                const existingFileSnapshot = await getDocs(q);
+
+                if (!existingFileSnapshot.empty) {
+                    console.log(`Файл ${file.name} уже существует. Пропускаем.`);
+                    skippedUploads++;
+                    continue; // Переходим к следующему файлу в цикле
                 }
-            });
-            await Promise.all(uploadPromises);
-            if (i + chunkSize < totalFiles) {
-                setUploadProgress('Пауза 1 секунда...');
-                await delay(1000);
+
+                // 2. Загрузка на ImgBB
+                const formData = new FormData();
+                formData.append('image', file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                const result = await res.json();
+
+                if (!result.success) {
+                    throw new Error(`Ошибка ImgBB для файла ${file.name}: ${result.error.message}`);
+                }
+                const imageUrl = result.data.url;
+
+                // 3. Создание документа в Firestore
+                const productData = {
+                    name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`,
+                    price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
+                    category: newProduct.category || '',
+                    description: newProduct.description || '',
+                    dimensions: newProduct.dimensions || '',
+                    material: newProduct.material || '',
+                    images: [imageUrl],
+                    status: 'draft',
+                    originalFilename: file.name
+                };
+                await addDoc(collection(db, "products"), productData);
+                successfulUploads++;
+
+            } catch (error) {
+                console.error(error); 
+                failedFiles.push(file.name);
             }
+
+            // 4. Небольшая вежливая пауза после КАЖДОГО файла
+            await delay(300); // Пауза 0.3 секунды, чтобы не перегружать сервер
         }
+
+        // Финальное уведомление
         let summaryMessage = `Массовая загрузка завершена!\nУспешно создано: ${successfulUploads} товаров.`;
         if (skippedUploads > 0) {
             summaryMessage += `\nПропущено дубликатов: ${skippedUploads}.`;
@@ -207,6 +219,7 @@ const AdminPage = () => {
             }
         }
         alert(summaryMessage);
+        
         setIsUploading(false);
         cancelEdit();
         fetchProducts();
