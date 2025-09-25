@@ -116,7 +116,7 @@ const ProductPage = () => {
                     )}
                 </div>
                 
-                <div className="flex flex-col lg:flex-row lg:items-start gap-12">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-12">
                     <div className="lg:w-3/4">
                         {/* ИЗМЕНЕНИЕ: Вот та самая обертка.
                         - Классы lg:max-w-4xl и lg:mx-auto сработают ТОЛЬКО на экранах 'lg' и больше.
@@ -136,7 +136,7 @@ const ProductPage = () => {
                                 <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
                                     {product.images.map((img, index) => (
                                         <div key={index} className="px-2">
-                                            <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto max-h-[45vh] object-contain rounded-lg"/>
+                                            <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto max-h-[40vh] object-contain rounded-lg"/>
                                         </div>
                                     ))}
                                 </Slider>
