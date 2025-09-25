@@ -117,24 +117,30 @@ const ProductPage = () => {
                 </div>
                 
                 <div className="flex flex-col lg:flex-row lg:items-start gap-12">
-                    <div className="lg:w-3/4 flex gap-4">
-                        <div className="w-24 flex-shrink-0">
-                            <Slider {...thumbSliderSettings} ref={slider => setThumbSlider(slider)}>
-                                {product.images.map((img, index) => (
-                                    <div key={index} className="p-1 cursor-pointer">
-                                        <img src={img} alt={`thumbnail ${index + 1}`} className="w-full h-auto object-cover rounded-md border"/>
-                                    </div>
-                                ))}
-                            </Slider>
-                        </div>
-                        <div className="w-full overflow-hidden relative">
-                            <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
-                                {product.images.map((img, index) => (
-                                    <div key={index} className="px-2">
-                                        <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto max-h-[70vh] object-contain rounded-lg"/>
-                                    </div>
-                                ))}
-                            </Slider>
+                    <div className="lg:w-3/4">
+                        {/* ИЗМЕНЕНИЕ: Вот та самая обертка.
+                        - Классы lg:max-w-4xl и lg:mx-auto сработают ТОЛЬКО на экранах 'lg' и больше.
+                        - На мобильных устройствах эти классы будут проигнорированы, и контейнер останется 100% ширины.
+                        */}
+                        <div className="flex gap-4 lg:max-w-4xl lg:mx-auto">
+                            <div className="w-24 flex-shrink-0">
+                                <Slider {...thumbSliderSettings} ref={slider => setThumbSlider(slider)}>
+                                    {product.images.map((img, index) => (
+                                        <div key={index} className="p-1 cursor-pointer">
+                                            <img src={img} alt={`thumbnail ${index + 1}`} className="w-full h-auto object-cover rounded-md border"/>
+                                        </div>
+                                    ))}
+                                </Slider>
+                            </div>
+                            <div className="w-full overflow-hidden relative">
+                                <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
+                                    {product.images.map((img, index) => (
+                                        <div key={index} className="px-2">
+                                            <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto max-h-[45vh] object-contain rounded-lg"/>
+                                        </div>
+                                    ))}
+                                </Slider>
+                            </div>
                         </div>
                     </div>
 

@@ -27,7 +27,7 @@ const Footer = () => (
                         <Logo width="40" />
                         {/* Текстовая часть */}
                         <span className="text-xl font-bold text-gray-800 tracking-wider">
-                            Эльвора
+                            Elvora
                         </span>
                     </a>
                     <p className="mt-4 text-sm">© Loft Wood Studio 2019-2025</p>
