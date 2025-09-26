@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import emailjs from '@emailjs/browser';
+import { Link } from 'react-router-dom';
 
 // Компонент формы, который отправляет email
 const ContactFormSection = () => {
@@ -39,7 +40,7 @@ const ContactFormSection = () => {
                             <textarea placeholder="Опишите подробности заказа" name="message" rows="3" required className="md:col-span-2 w-full px-4 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"></textarea>
                             <div className="md:col-span-2 flex flex-col md:flex-row justify-between items-center">
                                 <button type="submit" className="w-full md:w-auto py-3 px-8 bg-gray-800 text-white font-semibold rounded-md shadow-md hover:bg-gray-700 transition duration-300">Отправить данные</button>
-                                <p className="text-xs text-gray-500 mt-4 md:mt-0 max-w-xs text-center md:text-left">Подтверждая заказ, вы соглашаетесь с условиями <a href="#!" className="underline">политики конфиденциальности</a></p>
+                                <p className="text-xs text-gray-500 mt-4 md:mt-0 max-w-xs text-center md:text-left">Подтверждая заявку, вы соглашаетесь с условиями <Link to="/privacy-policy" className="underline hover:text-gray-800">политики конфиденциальности</Link></p>
                             </div>
                             {statusMessage && <p className="md:col-span-2 text-center mt-4">{statusMessage}</p>}
                         </form>

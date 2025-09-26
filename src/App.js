@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -14,6 +14,7 @@ import AdminPage from './pages/AdminPage';
 import ProductPage from './pages/ProductPage';
 import UsPage from './pages/Us';
 import ContactPage from './pages/ContactPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 // Компонент для защиты админ-панели
 const PrivateRoute = ({ user, children }) => {
@@ -23,27 +24,45 @@ const PrivateRoute = ({ user, children }) => {
   return <Navigate to="/login" />;
 };
 
+// Компонент баннера для уведомления
+const ConsentBanner = ({ onAccept }) => {
+    return (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-800 text-white p-4 flex flex-col sm:flex-row justify-between items-center z-50 shadow-lg">
+            <p className="text-sm mb-2 sm:mb-0">
+                Продолжая использовать наш сайт, вы даете согласие на обработку файлов cookie и принимаете условия{' '}
+                <Link to="/privacy-policy" className="underline hover:text-gray-300">Политики конфиденциальности</Link>.
+            </p>
+            <button 
+                onClick={onAccept}
+                className="bg-sand text-gray-800 font-semibold px-4 py-2 rounded-md hover:bg-opacity-80 transition-colors flex-shrink-0"
+            >
+                OK
+            </button>
+        </div>
+    );
+};
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showConsent, setShowConsent] = useState(false);
 
   useEffect(() => {
-    // --- ИЗМЕНЕНИЕ: Теперь мы также загружаем роль пользователя ---
+    const consentGiven = localStorage.getItem('userConsent');
+    if (!consentGiven) {
+      setShowConsent(true);
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // Пользователь вошел. Теперь идем в Firestore за его ролью.
         const userDocRef = doc(db, "users", currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
-
         if (userDocSnap.exists()) {
-          // Если документ с ролью найден, добавляем роль к объекту пользователя
           setUser({ ...currentUser, role: userDocSnap.data().role });
         } else {
-          // Если документа с ролью нет, это обычный пользователь
           setUser(currentUser);
         }
       } else {
-        // Пользователь вышел
         setUser(null);
       }
       setLoading(false);
@@ -51,8 +70,13 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const handleConsent = () => {
+    localStorage.setItem('userConsent', 'true');
+    setShowConsent(false);
+  };
+
   if (loading) {
-    return <div>Загрузка...</div>; // Показываем заглушку, пока проверяется статус входа
+    return <div>Загрузка...</div>;
   }
 
   return (
@@ -67,6 +91,7 @@ export default function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/product/:productId" element={<ProductPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route 
               path="/admin" 
               element={
@@ -78,8 +103,8 @@ export default function App() {
           </Routes>
         </main>
         <Footer />
+        {showConsent && <ConsentBanner onAccept={handleConsent} />}
       </div>
     </Router>
   );
 }
- 

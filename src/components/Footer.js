@@ -1,5 +1,6 @@
 import React from 'react';
 import Logo from './Logo';
+import { Link } from 'react-router-dom';
 
 // Компонент-обертка для иконок (без изменений)
 const SocialIcon = ({ href, className = '', children }) => (
@@ -31,6 +32,9 @@ const Footer = () => (
                         </span>
                     </a>
                     <p className="mt-4 text-sm">© Loft Wood Studio 2019-2025</p>
+                    <Link to="/privacy-policy" className="text-sm mt-2 inline-block hover:text-gray-800">
+                        Политика конфиденциальности
+                    </Link>
                 </div>
                 {/* КОЛОНКА 2: Каталог */}
                 <div>
