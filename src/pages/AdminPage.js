@@ -14,7 +14,7 @@ function NextArrow(props) {
     const { className, style, onClick } = props;
     return (
         <div
-            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-blue-500 bg-opacity-50 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
+            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
             style={{ ...style, right: '15px' }}
             onClick={onClick}
         >
@@ -30,7 +30,7 @@ function PrevArrow(props) {
     const { className, style, onClick } = props;
     return (
         <div
-            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-blue-500 bg-opacity-50 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
+            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
             style={{ ...style, left: '15px' }}
             onClick={onClick}
         >
