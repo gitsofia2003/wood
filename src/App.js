@@ -12,10 +12,8 @@ import CatalogPage from './pages/CatalogPage';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import ProductPage from './pages/ProductPage';
-
-// Создаем пустые страницы "О нас" и "Контакты"
-const AboutPage = () => <div className="container mx-auto p-8"><h1 className="text-2xl">О нас</h1></div>;
-const ContactPage = () => <div className="container mx-auto p-8"><h1 className="text-2xl">Контакты</h1></div>;
+import UsPage from './pages/Us';
+import ContactPage from './pages/ContactPage';
 
 // Компонент для защиты админ-панели
 const PrivateRoute = ({ user, children }) => {
@@ -65,7 +63,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/catalog" element={<CatalogPage />} />
-            <Route path="/about" element={<AboutPage />} />
+            <Route path="/about" element={<UsPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/product/:productId" element={<ProductPage />} />
