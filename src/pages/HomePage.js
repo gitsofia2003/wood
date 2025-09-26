@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
-import ContactFormSection from './email';
-import AboutPage from './about';
+import ContactFormSection from '../components/email';
+import AboutPage from '../components/about';
 
 import MoodboardSection from '../components/MoodboardSection';
 import CategoryFilter from '../components/CategoryFilter';

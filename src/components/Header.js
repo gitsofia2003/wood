@@ -64,7 +64,7 @@ const Header = ({ user }) => {
           {location.pathname !== '/admin' && (
             <div className="hidden md:block">
                 <a href="tel:+78123364246" className="font-bold text-lg text-gray-800">+7 (812) 336-42-46</a>
-                <p className="text-sm text-gray-500 cursor-pointer">Заказать звонок</p>
+                <p className="text-sm text-gray-500 cursor-pointer">Оставить заявку</p>
             </div>
           )}
 
