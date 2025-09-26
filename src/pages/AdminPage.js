@@ -1,9 +1,46 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, {  useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where, writeBatch } from "firebase/firestore";
 
+import Slider from 'react-slick';
+import "slick-carousel/slick/slick.css"; 
+import "slick-carousel/slick/slick-theme.css";
+
 import CategoryFilter, { categories } from '../components/CategoryFilter';
 import MaterialFilter from '../components/MaterialFilter';
+
+// Стилизованные стрелки для слайдера
+function NextArrow(props) {
+    const { className, style, onClick } = props;
+    return (
+        <div
+            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-blue-500 bg-opacity-50 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
+            style={{ ...style, right: '15px' }}
+            onClick={onClick}
+        >
+            {/* ДОБАВЛЕНА SVG ИКОНКА */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+        </div>
+    );
+}
+
+function PrevArrow(props) {
+    const { className, style, onClick } = props;
+    return (
+        <div
+            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-blue-500 bg-opacity-50 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
+            style={{ ...style, left: '15px' }}
+            onClick={onClick}
+        >
+            {/* ДОБАВЛЕНА SVG ИКОНКА */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+        </div>
+    );
+}
 
 const IMGBB_API_KEY = "c38b7ef21c516acf7c50c35d305a0c4a";
 const availableMaterials = [
@@ -483,6 +520,16 @@ const AdminPage = () => {
 
     const draftProducts = products.filter(p => p.status === 'draft');
 
+    const sliderSettings = {
+        dots: true,
+        infinite: false,
+        speed: 500,
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        nextArrow: <NextArrow />,
+        prevArrow: <PrevArrow />,
+    };
+
     return (
         <div className="container mx-auto px-6 py-12">
             <DuplicateFileModal
@@ -491,75 +538,85 @@ const AdminPage = () => {
             />
 
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
+            {/* ИЗМЕНЕНИЕ: Полностью новый блок формы */}
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
-                <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    {/* Большой предпросмотр при публикации */}
-                    {showLargePreview && (
-                        <div className="md:col-span-2 p-4 border-2 border-dashed border-blue-400 rounded-lg bg-blue-50 mb-6">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Предпросмотр публикации:</h3>
-                            <div className="flex flex-col sm:flex-row gap-4 items-start">
-                                <img 
-                                    src={imagePreviews[0]} 
-                                    alt="Предпросмотр" 
-                                    className="w-48 h-48 object-cover rounded-md border bg-white shadow-sm" 
-                                />
-                                <div>
-                                    <p className="text-xl font-bold text-gray-900">{newProduct.name || 'Название еще не указано'}</p>
-                                    <p className="text-md text-gray-600 mt-1">{newProduct.category || 'Категория не выбрана'}</p>
-                                    <p className="text-2xl font-bold text-red-600 mt-4">{newProduct.price ? (newProduct.price + ' ₽') : 'Цена не указана'}</p>
+                <h2 className="text-2xl font-semibold mb-6">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
+                
+                <form onSubmit={handleSubmit}>
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        
+                        {/* Левая колонка - Фотографии */}
+                        <div className="lg:w-1/2 flex flex-col">
+                            <label className="block mb-2 text-sm font-medium">Фотографии товара</label>
+                            {imagePreviews.length > 0 ? (
+                                <div className="relative mb-4">
+                                    <Slider {...sliderSettings}>
+                                        {imagePreviews.map((preview, index) => (
+                                            <div key={index} className="relative">
+                                                <img src={preview} alt={`Предпросмотр ${index + 1}`} className="w-full h-96 object-cover rounded-md border bg-gray-100" />
+                                                <button type="button" onClick={() => handleRemoveImage(index)} className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold leading-none hover:bg-red-700 transition-colors z-20">&times;</button>
+                                            </div>
+                                        ))}
+                                    </Slider>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="w-full h-96 flex items-center justify-center bg-gray-50 border-2 border-dashed rounded-lg mb-4">
+                                    <p className="text-gray-400">Изображения не загружены</p>
+                                </div>
+                            )}
+                            <input id="image-upload" type="file" onChange={handleFileChange} multiple className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" />
                         </div>
-                    )}
-                    
-                    <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded" />
-                    <div />
-                    <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (шаблон)" className="p-2 border rounded" />
-                    <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена со скидкой (шаблон)" className="p-2 border rounded" />
-                    {discount > 0 && ( <div className="md:col-span-2 text-center p-2 bg-green-100 text-green-800 rounded-md -mt-2"> Рассчитанная скидка: **{discount}%** </div> )}
-                    <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded">
-                        <option value="" disabled>Выберите категорию</option>
-                        {categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))}
-                    </select>
-                    <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded" />
-                    <select name="material" value={newProduct.material} onChange={handleInputChange} className="p-2 border rounded">
-                        <option value="">Материал (необязательно)</option>
-                        {availableMaterials.map(materialObj => (
-                            <option key={materialObj.name} value={materialObj.name}>{materialObj.name}</option>
-                        ))}
-                    </select>
-                    <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание (шаблон)" rows="4" className="md:col-span-2 p-2 border rounded"></textarea>
-                    <div className="md:col-span-2">
-                        <label className="block mb-2 text-sm font-medium">Фотографии товара</label>
-                        <input id="image-upload" type="file" onChange={handleFileChange} multiple className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" />
-                        {imagePreviews.length > 0 && (
-                            <div className="mt-4 flex flex-wrap gap-4">
-                                {imagePreviews.map((preview, index) => (
-                                    <div key={index} className="relative">
-                                        <img src={preview} alt={`Предпросмотр ${index + 1}`} className="w-24 h-24 object-cover rounded-md border" />
-                                        <button type="button" onClick={() => handleRemoveImage(index)} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold leading-none hover:bg-red-700 transition-colors">&times;</button>
-                                    </div>
+
+                        {/* Правая колонка - Информация о товаре */}
+                        <div className="lg:w-1/2 flex flex-col gap-4">
+                            {showLargePreview && (
+                                <div className="p-4 border-2 border-dashed border-blue-400 rounded-lg bg-blue-50">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Предпросмотр публикации:</h3>
+                                    <p className="text-xl font-bold text-gray-900">{newProduct.name || 'Название еще не указано'}</p>
+                                    <p className="text-2xl font-bold text-red-600 mt-2">{newProduct.price ? (newProduct.price + ' ₽') : 'Цена не указана'}</p>
+                                </div>
+                            )}
+                            <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded w-full" />
+                            <div className="flex gap-4">
+                                <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (шаблон)" className="p-2 border rounded w-1/2" />
+                                <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена со скидкой (шаблон)" className="p-2 border rounded w-1/2" />
+                            </div>
+                            {discount > 0 && ( <div className="text-center p-2 bg-green-100 text-green-800 rounded-md"> Рассчитанная скидка: **{discount}%** </div> )}
+                            <div className="flex gap-4">
+                                <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded w-1/2">
+                                    <option value="" disabled>Выберите категорию</option>
+                                    {categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))}
+                                </select>
+                                <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры (шаблон)" className="p-2 border rounded w-1/2" />
+                            </div>
+                            <select name="material" value={newProduct.material} onChange={handleInputChange} className="p-2 border rounded w-full">
+                                <option value="">Материал (необязательно)</option>
+                                {availableMaterials.map(materialObj => (
+                                    <option key={materialObj.name} value={materialObj.name}>{materialObj.name}</option>
                                 ))}
+                            </select>
+                            <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание (шаблон)" rows="6" className="p-2 border rounded w-full"></textarea>
+                        </div>
+                    </div>
+
+                    {/* Кнопки и чекбоксы под колонками */}
+                    <div className="border-t mt-6 pt-6">
+                        {!editingProduct && (
+                            <div className="flex items-center mb-4">
+                                <input id="isBatchUpload" type="checkbox" checked={isBatchUpload} onChange={(e) => setIsBatchUpload(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <label htmlFor="isBatchUpload" className="ml-2 block text-sm font-bold text-gray-700">Загрузить каждое фото как отдельный товар</label>
                             </div>
                         )}
-                    </div>
-                    {!editingProduct && (
-                        <div className="md:col-span-2 flex items-center my-2">
-                            <input id="isBatchUpload" type="checkbox" checked={isBatchUpload} onChange={(e) => setIsBatchUpload(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                            <label htmlFor="isBatchUpload" className="ml-2 block text-sm font-bold text-gray-700">Загрузить каждое фото как отдельный товар</label>
+                        <div className="flex items-center mb-6">
+                            <input id="isDraft" type="checkbox" checked={isDraft} onChange={(e) => setIsDraft(e.target.checked)} disabled={isBatchUpload} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-200" />
+                            <label htmlFor="isDraft" className="ml-2 block text-sm text-gray-700">Сохранить как черновик (можно без данных)</label>
                         </div>
-                    )}
-                    <div className="md:col-span-2 flex items-center -mt-2">
-                        <input id="isDraft" type="checkbox" checked={isDraft} onChange={(e) => setIsDraft(e.target.checked)} disabled={isBatchUpload} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-200" />
-                        <label htmlFor="isDraft" className="ml-2 block text-sm text-gray-700">Сохранить как черновик (можно без данных)</label>
-                    </div>
-                    <div className="md:col-span-2 flex items-center gap-4">
-                        <button type="submit" disabled={isUploading} className="w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 transition-colors">
-                            {isUploading ? (uploadProgress || 'Загрузка...') : (editingProduct ? 'Сохранить изменения' : 'Добавить товар')}
-                        </button>
-                        {editingProduct && ( <button type="button" onClick={cancelEdit} className="w-full py-3 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Отмена</button> )}
+                        <div className="flex items-center gap-4">
+                            <button type="submit" disabled={isUploading} className="w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 transition-colors">
+                                {isUploading ? (uploadProgress || 'Загрузка...') : (editingProduct ? 'Сохранить изменения' : 'Добавить товар')}
+                            </button>
+                            {editingProduct && ( <button type="button" onClick={cancelEdit} className="w-full py-3 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Отмена</button> )}
+                        </div>
                     </div>
                 </form>
             </div>
