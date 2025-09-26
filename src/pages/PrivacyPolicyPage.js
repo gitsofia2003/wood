@@ -1,5 +1,3 @@
-// src/pages/PrivacyPolicyPage.js
-
 import React from 'react';
 
 const PrivacyPolicyPage = () => {

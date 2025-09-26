@@ -192,7 +192,7 @@ const ProductPage = () => {
                     </div>
 
                     {/* --- DESKTOP: оригинальный блок */}
-                    <div className="hidden lg:block lg:w-1/4 lg:pl-12">
+                    <div className="hidden lg:block lg:w-1/4 lg:pl-8">
                         <h1 className="text-4xl font-bold text-gray-800">{product.name}</h1>
                         <p className="text-lg text-gray-500 mt-2">{product.category}</p>
 
