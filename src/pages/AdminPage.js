@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where, writeBatch } from "firebase/firestore";
 
@@ -12,32 +12,20 @@ const availableMaterials = [
     { name: "Сандал", color: "#B07953" }
 ];
 
-const formatNumberWithSpaces = (value) => { if (!value) return ''; const numericValue = value.replace(/[^0-9]/g, ''); return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); };
-const handleFirestoreError = (error) => { if (error.code === 'permission-denied') { alert("Че самый умный? :) "); } else { console.error("Произошла ошибка Firestore: ", error); alert("Произошла непредвиденная ошибка. Подробности в консоли."); } };
+const formatNumberWithSpaces = (value) => {
+    if (!value) return '';
+    const numericValue = value.replace(/[^0-9]/g, '');
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
 
-const DuplicateFileModal = ({ isOpen, onResolve, file }) => {
-    const [applyToAll, setApplyToAll] = useState(false);
-    if (!isOpen) return null;
-    const handleResolve = (choice) => {
-        onResolve({ choice, applyToAll });
-    };
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h3 className="text-lg font-bold">Найден дубликат</h3>
-                <p className="mt-2 text-sm text-gray-600">Товар с именем файла <code className="bg-gray-200 p-1 rounded text-xs">{file?.name}</code> уже существует в базе.</p>
-                <p className="mt-2 text-sm text-gray-600">Что вы хотите сделать?</p>
-                <div className="mt-4 flex items-center">
-                    <input id="applyToAll" type="checkbox" checked={applyToAll} onChange={(e) => setApplyToAll(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"/>
-                    <label htmlFor="applyToAll" className="ml-2 block text-sm text-gray-900">Применить ко всем последующим дубликатам</label>
-                </div>
-                <div className="mt-6 flex justify-end gap-4">
-                    <button onClick={() => handleResolve('skip')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Пропустить</button>
-                    <button onClick={() => handleResolve('replace')} className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700">Заменить</button>
-                </div>
-            </div>
-        </div>
-    );
+// ИЗМЕНЕНИЕ 1: Создаем единую функцию для обработки ошибок Firestore
+const handleFirestoreError = (error) => {
+    if (error.code === 'permission-denied') {
+        alert("Че самый умный? :) ");
+    } else {
+        console.error("Произошла ошибка Firestore: ", error);
+        alert("Произошла непредвиденная ошибка. Подробности в консоли.");
+    }
 };
 
 const AdminPage = () => {
@@ -56,104 +44,331 @@ const AdminPage = () => {
     const [uploadProgress, setUploadProgress] = useState('');
     const [selectedPublished, setSelectedPublished] = useState([]);
     const [selectedDrafts, setSelectedDrafts] = useState([]);
-    const [duplicateFile, setDuplicateFile] = useState(null);
-    const [resolveDuplicate, setResolveDuplicate] = useState(null);
-    const applyToAllChoice = useRef(null);
 
     useEffect(() => { if (isBatchUpload) { setIsDraft(true); } }, [isBatchUpload]);
-    useEffect(() => { const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, '')); const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, '')); if (original > 0 && sale > 0 && original > sale) { setDiscount(Math.round(((original - sale) / original) * 100)); } else { setDiscount(0); } }, [newProduct.price, newProduct.originalPrice]);
-    const fetchProducts = async () => { setIsLoading(true); const productSnapshot = await getDocs(collection(db, "products")); const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); setProducts(productList); setIsLoading(false); };
+
+    useEffect(() => {
+        const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
+        const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, ''));
+        if (original > 0 && sale > 0 && original > sale) {
+            setDiscount(Math.round(((original - sale) / original) * 100));
+        } else {
+            setDiscount(0);
+        }
+    }, [newProduct.price, newProduct.originalPrice]);
+
+    const fetchProducts = async () => {
+        setIsLoading(true);
+        const productSnapshot = await getDocs(collection(db, "products"));
+        const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProducts(productList);
+        setIsLoading(false);
+    };
+
     useEffect(() => { fetchProducts(); }, []);
-    useEffect(() => { return () => { imagePreviews.forEach(preview => { if (preview.startsWith('blob:')) { URL.revokeObjectURL(preview); } }); }; }, [imagePreviews]);
-    const handleInputChange = (e) => { const { name, value } = e.target; if (name === 'price' || name === 'originalPrice') { setNewProduct(prevState => ({ ...prevState, [name]: formatNumberWithSpaces(value) })); } else { setNewProduct(prevState => ({ ...prevState, [name]: value })); } };
-    const handleFileChange = (e) => { const newFiles = Array.from(e.target.files); if (newFiles.length === 0) return; const newPreviews = newFiles.map(file => URL.createObjectURL(file)); setImageFiles(prevFiles => [...prevFiles, ...newFiles]); setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]); e.target.value = null; };
-    const handleRemoveImage = (indexToRemove) => { const urlToRemove = imagePreviews[indexToRemove]; if (urlToRemove.startsWith('blob:')) { const fileIndex = imagePreviews.filter(p => p.startsWith('blob:')).findIndex(p => p === urlToRemove); setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== fileIndex)); URL.revokeObjectURL(urlToRemove); } setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove)); };
-    const handleEditClick = (product) => { setEditingProduct(product); const priceForEdit = product.price ? String(product.price).replace(/[^0-9]/g, '') : ''; const originalPriceForEdit = product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : ''; const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : ''; setNewProduct({ name: product.name || '', price: formatNumberWithSpaces(priceForEdit), originalPrice: formatNumberWithSpaces(originalPriceForEdit), category: product.category || '', dimensions: dimensionsForEdit, material: product.material || '', description: product.description || '' }); setImagePreviews(product.images || []); setImageFiles([]); setIsDraft(product.status === 'draft'); setIsBatchUpload(false); window.scrollTo(0, 0); };
-    const cancelEdit = () => { setEditingProduct(null); setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' }); setImageFiles([]); setImagePreviews([]); setDiscount(0); setIsDraft(false); setIsBatchUpload(false); setUploadProgress(''); };
+    
+    useEffect(() => {
+        return () => {
+            imagePreviews.forEach(preview => {
+                if (preview.startsWith('blob:')) {
+                    URL.revokeObjectURL(preview);
+                }
+            });
+        };
+    }, [imagePreviews]);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'price' || name === 'originalPrice') {
+            setNewProduct(prevState => ({ ...prevState, [name]: formatNumberWithSpaces(value) }));
+        } else {
+            setNewProduct(prevState => ({ ...prevState, [name]: value }));
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const newFiles = Array.from(e.target.files);
+        if (newFiles.length === 0) return;
+        const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+        setImageFiles(prevFiles => [...prevFiles, ...newFiles]);
+        setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
+        e.target.value = null;
+    };
+
+    const handleRemoveImage = (indexToRemove) => {
+        const urlToRemove = imagePreviews[indexToRemove];
+        if (urlToRemove.startsWith('blob:')) {
+            const fileIndex = imagePreviews.filter(p => p.startsWith('blob:')).findIndex(p => p === urlToRemove);
+            setImageFiles(prevFiles => prevFiles.filter((_, index) => index !== fileIndex));
+            URL.revokeObjectURL(urlToRemove);
+        }
+        setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove));
+    };
+
+    const handleEditClick = (product) => {
+        setEditingProduct(product);
+        const priceForEdit = product.price ? String(product.price).replace(/[^0-9]/g, '') : '';
+        const originalPriceForEdit = product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : '';
+        const dimensionsForEdit = product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '';
+        setNewProduct({
+            name: product.name || '',
+            price: formatNumberWithSpaces(priceForEdit),
+            originalPrice: formatNumberWithSpaces(originalPriceForEdit),
+            category: product.category || '',
+            dimensions: dimensionsForEdit,
+            material: product.material || '',
+            description: product.description || ''
+        });
+        setImagePreviews(product.images || []);
+        setImageFiles([]);
+        setIsDraft(product.status === 'draft');
+        setIsBatchUpload(false);
+        window.scrollTo(0, 0);
+    };
+
+    const cancelEdit = () => {
+        setEditingProduct(null);
+        setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
+        setImageFiles([]);
+        setImagePreviews([]);
+        setDiscount(0);
+        setIsDraft(false);
+        setIsBatchUpload(false);
+        setUploadProgress('');
+    };
+
+   // ЗАМЕНИ ЭТУ ФУНКЦИЮ В ФАЙЛЕ AdminPage.js
 
     const handleBatchSubmit = async () => {
-        if (imageFiles.length === 0) { alert("Пожалуйста, выберите фотографии для массовой загрузки."); return; }
+        if (imageFiles.length === 0) {
+            alert("Пожалуйста, выберите фотографии для массовой загрузки.");
+            return;
+        }
+
         setIsUploading(true);
-        applyToAllChoice.current = null;
         const totalFiles = imageFiles.length;
         let successfulUploads = 0;
-        let replacedUploads = 0;
         let skippedUploads = 0;
         const failedFiles = [];
+        
+        // Функция для паузы
         const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
+        // ИЗМЕНЕНИЕ: Убираем "пачки" и используем простой цикл for...of для последовательной загрузки
         for (const [index, file] of imageFiles.entries()) {
-            setUploadProgress(`Обработка ${index + 1} из ${totalFiles}...`);
+            setUploadProgress(`Загрузка ${index + 1} из ${totalFiles}...`);
+            
             try {
+                // 1. Проверка на дубликат (остается)
                 const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
                 const existingFileSnapshot = await getDocs(q);
-                let userDecision = { choice: 'add' };
 
                 if (!existingFileSnapshot.empty) {
-                    if (applyToAllChoice.current) {
-                        userDecision.choice = applyToAllChoice.current;
-                    } else {
-                        setDuplicateFile(file);
-                        const choicePromise = new Promise((resolve) => { setResolveDuplicate(() => resolve); });
-                        userDecision = await choicePromise;
-                        if (userDecision.applyToAll) {
-                            applyToAllChoice.current = userDecision.choice;
-                        }
-                    }
-                }
-                setDuplicateFile(null);
-
-                if (userDecision.choice === 'skip') {
+                    console.log(`Файл ${file.name} уже существует. Пропускаем.`);
                     skippedUploads++;
-                    console.log(`Файл ${file.name} пропущен по решению пользователя.`);
-                    continue;
+                    continue; // Переходим к следующему файлу в цикле
                 }
 
+                // 2. Загрузка на ImgBB
                 const formData = new FormData();
                 formData.append('image', file);
                 const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
                 const result = await res.json();
-                if (!result.success) throw new Error(`Ошибка ImgBB для файла ${file.name}: ${result.error.message}`);
+
+                if (!result.success) {
+                    throw new Error(`Ошибка ImgBB для файла ${file.name}: ${result.error.message}`);
+                }
                 const imageUrl = result.data.url;
 
-                const productData = { name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`, price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу', category: newProduct.category || '', description: newProduct.description || '', dimensions: newProduct.dimensions || '', material: newProduct.material || '', images: [imageUrl], status: 'draft', originalFilename: file.name };
+                // 3. Создание документа в Firestore
+                const productData = {
+                    name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`,
+                    price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
+                    category: newProduct.category || '',
+                    description: newProduct.description || '',
+                    dimensions: newProduct.dimensions || '',
+                    material: newProduct.material || '',
+                    images: [imageUrl],
+                    status: 'draft',
+                    originalFilename: file.name
+                };
+                await addDoc(collection(db, "products"), productData);
+                successfulUploads++;
 
-                if (userDecision.choice === 'replace') {
-                    const docIdToReplace = existingFileSnapshot.docs[0].id;
-                    await updateDoc(doc(db, "products", docIdToReplace), productData);
-                    replacedUploads++;
-                } else {
-                    await addDoc(collection(db, "products"), productData);
-                    successfulUploads++;
-                }
             } catch (error) {
-                console.error(error);
+                console.error(error); 
                 failedFiles.push(file.name);
             }
-            await delay(300);
+
+            // 4. Небольшая вежливая пауза после КАЖДОГО файла
+            await delay(300); // Пауза 0.3 секунды, чтобы не перегружать сервер
         }
 
-        let summaryMessage = `Массовая загрузка завершена!\nУспешно создано: ${successfulUploads} товаров.\nЗаменено: ${replacedUploads}.`;
-        if (skippedUploads > 0) { summaryMessage += `\nПропущено: ${skippedUploads}.`; }
-        if (failedFiles.length > 0) { summaryMessage += `\n\nНе удалось загрузить: ${failedFiles.length} файлов.`; if (failedFiles.length > 10) { summaryMessage += `\nПОЛНЫЙ СПИСОК СМОТРИТЕ В КОНСОЛИ РАЗРАБОТЧИКА (F12).`; console.error("Список файлов, которые не удалось загрузить:", failedFiles); } else { summaryMessage += `\nСписок: ${failedFiles.join(', ')}`; } }
+        // Финальное уведомление
+        let summaryMessage = `Массовая загрузка завершена!\nУспешно создано: ${successfulUploads} товаров.`;
+        if (skippedUploads > 0) {
+            summaryMessage += `\nПропущено дубликатов: ${skippedUploads}.`;
+        }
+        if (failedFiles.length > 0) {
+            summaryMessage += `\n\nНе удалось загрузить: ${failedFiles.length} файлов.`;
+            if (failedFiles.length > 10) {
+                summaryMessage += `\nПОЛНЫЙ СПИСОК СМОТРИТЕ В КОНСОЛИ РАЗРАБОТЧИКА (F12).`;
+                console.error("Список файлов, которые не удалось загрузить:", failedFiles);
+            } else {
+                summaryMessage += `\nСписок: ${failedFiles.join(', ')}`;
+            }
+        }
         alert(summaryMessage);
+        
         setIsUploading(false);
         cancelEdit();
         fetchProducts();
     };
 
-    const handleSubmit = async (e) => { e.preventDefault(); if (isBatchUpload) { await handleBatchSubmit(); return; } if (!isDraft) { if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) { alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры."); return; } } if (imagePreviews.length === 0) { alert("Товар должен иметь хотя бы одно изображение."); return; } setIsUploading(true); setUploadProgress('Загрузка изображений...'); try { let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : []; if (imageFiles.length > 0) { const uploadPromises = imageFiles.map(file => { const formData = new FormData(); formData.append('image', file); return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData }).then(res => res.json()); }); const uploadResults = await Promise.all(uploadPromises); const newImageUrls = uploadResults.map(result => result.data.url); imageUrls = [...imageUrls, ...newImageUrls]; } setUploadProgress('Сохранение данных...'); let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, ''); formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽'; let formattedOriginalPrice = null; if (newProduct.originalPrice) { formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, ''); formattedOriginalPrice = new Intl.NumberFormat('ru-RU').format(formattedOriginalPrice) + ' ₽'; } let formattedDimensions = newProduct.dimensions.trim(); if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) { formattedDimensions += ' см'; } const productData = { name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name, price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice, ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }), category: newProduct.category, dimensions: formattedDimensions, ...(newProduct.material && { material: newProduct.material }), ...(newProduct.description && { description: newProduct.description }), images: imageUrls, status: isDraft ? 'draft' : 'published', }; if (editingProduct) { const productRef = doc(db, "products", editingProduct.id); await updateDoc(productRef, productData); } else { await addDoc(collection(db, "products"), productData); } cancelEdit(); fetchProducts(); } catch (error) { handleFirestoreError(error); } finally { setIsUploading(false); setUploadProgress(''); } };
-    const handleDeleteProduct = async (productId) => { if (window.confirm("Вы уверены, что хотите удалить этот товар?")) { try { await deleteDoc(doc(db, "products", productId)); fetchProducts(); } catch (error) { handleFirestoreError(error); } } };
-    const handleToggleSelection = (id, listType) => { const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts; setSelection(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]); };
-    const handleSelectAll = (listType, productList) => { const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts; const currentSelection = listType === 'published' ? selectedPublished : selectedDrafts; if (currentSelection.length === productList.length && productList.length > 0) { setSelection([]); } else { setSelection(productList.map(p => p.id)); } };
-    const handleUnpublishSelected = async () => { if (selectedPublished.length === 0) return; if (!window.confirm(`Вы уверены, что хотите снять с публикации ${selectedPublished.length} товаров? Они будут перемещены в черновик.`)) return; try { const batch = writeBatch(db); selectedPublished.forEach(id => { const docRef = doc(db, "products", id); batch.update(docRef, { status: "draft" }); }); await batch.commit(); setSelectedPublished([]); fetchProducts(); } catch (error) { handleFirestoreError(error); } };
-    const handleDeleteSelected = async (listType) => { const selection = listType === 'published' ? selectedPublished : selectedDrafts; const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts; if (selection.length === 0) return; if (!window.confirm(`Вы уверены, что хотите удалить ${selection.length} товаров? Это действие необратимо.`)) return; try { const batch = writeBatch(db); selection.forEach(id => { const docRef = doc(db, "products", id); batch.delete(docRef); }); await batch.commit(); setSelection([]); fetchProducts(); } catch (error) { handleFirestoreError(error); } };
-    const publishedProducts = products.filter(p => { if (p.status === 'draft') return false; const categoryMatch = activeCategory === 'Все товары' || p.category === activeCategory; const materialMatch = activeMaterial === 'Все материалы' || p.material === activeMaterial; return categoryMatch && materialMatch; });
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (isBatchUpload) {
+            await handleBatchSubmit();
+            return;
+        }
+        if (!isDraft) {
+            if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.dimensions) {
+                alert("Для публикации товара, пожалуйста, заполните все обязательные поля: Название, Цена, Категория, Размеры.");
+                return;
+            }
+        }
+        if (imagePreviews.length === 0) {
+            alert("Товар должен иметь хотя бы одно изображение.");
+            return;
+        }
+        setIsUploading(true);
+        setUploadProgress('Загрузка изображений...');
+        try {
+            let imageUrls = editingProduct ? imagePreviews.filter(p => !p.startsWith('blob:')) : [];
+            if (imageFiles.length > 0) {
+                const uploadPromises = imageFiles.map(file => {
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    return fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData }).then(res => res.json());
+                });
+                const uploadResults = await Promise.all(uploadPromises);
+                const newImageUrls = uploadResults.map(result => result.data.url);
+                imageUrls = [...imageUrls, ...newImageUrls];
+            }
+            setUploadProgress('Сохранение данных...');
+            let formattedPrice = String(newProduct.price).replace(/[^0-9]/g, '');
+            formattedPrice = new Intl.NumberFormat('ru-RU').format(formattedPrice) + ' ₽';
+            let formattedOriginalPrice = null;
+            if (newProduct.originalPrice) {
+                formattedOriginalPrice = String(newProduct.originalPrice).replace(/[^0-9]/g, '');
+                formattedOriginalPrice = new Intl.NumberFormat('ru-RU').format(formattedOriginalPrice) + ' ₽';
+            }
+            let formattedDimensions = newProduct.dimensions.trim();
+            if (formattedDimensions && !formattedDimensions.toLowerCase().endsWith('см')) {
+                formattedDimensions += ' см';
+            }
+            const productData = {
+                name: isDraft && !newProduct.name ? 'ЧЕРНОВИК: Новый товар' : newProduct.name,
+                price: isDraft && !newProduct.price ? 'Цена по запросу' : formattedPrice,
+                ...(formattedOriginalPrice && { originalPrice: formattedOriginalPrice }),
+                category: newProduct.category,
+                dimensions: formattedDimensions,
+                ...(newProduct.material && { material: newProduct.material }),
+                ...(newProduct.description && { description: newProduct.description }),
+                images: imageUrls,
+                status: isDraft ? 'draft' : 'published',
+            };
+            if (editingProduct) {
+                const productRef = doc(db, "products", editingProduct.id);
+                await updateDoc(productRef, productData);
+            } else {
+                await addDoc(collection(db, "products"), productData);
+            }
+            cancelEdit();
+            fetchProducts();
+        } catch (error) {
+            handleFirestoreError(error);
+        } finally {
+            setIsUploading(false);
+            setUploadProgress('');
+        }
+    };
+    
+    const handleDeleteProduct = async (productId) => {
+        if (window.confirm("Вы уверены, что хотите удалить этот товар?")) {
+            try {
+                await deleteDoc(doc(db, "products", productId));
+                fetchProducts();
+            } catch (error) {
+                handleFirestoreError(error);
+            }
+        }
+    };
+    
+    const handleToggleSelection = (id, listType) => {
+        const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
+        setSelection(prev => 
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = (listType, productList) => {
+        const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
+        const currentSelection = listType === 'published' ? selectedPublished : selectedDrafts;
+        if (currentSelection.length === productList.length && productList.length > 0) {
+            setSelection([]);
+        } else {
+            setSelection(productList.map(p => p.id));
+        }
+    };
+    
+    const handleUnpublishSelected = async () => {
+        if (selectedPublished.length === 0) return;
+        if (!window.confirm(`Вы уверены, что хотите снять с публикации ${selectedPublished.length} товаров? Они будут перемещены в черновик.`)) return;
+        try {
+            const batch = writeBatch(db);
+            selectedPublished.forEach(id => {
+                const docRef = doc(db, "products", id);
+                batch.update(docRef, { status: "draft" });
+            });
+            await batch.commit();
+            setSelectedPublished([]);
+            fetchProducts();
+        } catch (error) {
+            handleFirestoreError(error);
+        }
+    };
+
+    const handleDeleteSelected = async (listType) => {
+        const selection = listType === 'published' ? selectedPublished : selectedDrafts;
+        const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
+        if (selection.length === 0) return;
+        if (!window.confirm(`Вы уверены, что хотите удалить ${selection.length} товаров? Это действие необратимо.`)) return;
+        try {
+            const batch = writeBatch(db);
+            selection.forEach(id => {
+                const docRef = doc(db, "products", id);
+                batch.delete(docRef);
+            });
+            await batch.commit();
+            setSelection([]);
+            fetchProducts();
+        } catch (error) {
+            handleFirestoreError(error);
+        }
+    };
+
+    const publishedProducts = products.filter(p => {
+        if (p.status === 'draft') return false;
+        const categoryMatch = activeCategory === 'Все товары' || p.category === activeCategory;
+        const materialMatch = activeMaterial === 'Все материалы' || p.material === activeMaterial;
+        return categoryMatch && materialMatch;
+    });
+
     const draftProducts = products.filter(p => p.status === 'draft');
 
     return (
         <div className="container mx-auto px-6 py-12">
-            <DuplicateFileModal isOpen={!!duplicateFile} file={duplicateFile} onResolve={(resolution) => { if (resolveDuplicate) resolveDuplicate(resolution); }} />
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
@@ -252,6 +467,7 @@ const AdminPage = () => {
                                 </div>
                             ) : (<p className="text-gray-500">Нет опубликованных товаров, соответствующих фильтрам.</p>)}
                         </div>
+
                         <div>
                              <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold">Черновик ({draftProducts.length})</h3>
