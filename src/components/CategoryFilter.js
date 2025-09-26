@@ -16,18 +16,27 @@ const CategoryIcon = ({ type }) => {
         Storage: <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />,
         Lighting: <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />,
         TVStand: <><rect x="2" y="7" width="20" height="11" rx="2" ry="2"></rect><line x1="6" y1="21" x2="6" y2="18"></line><line x1="18" y1="21" x2="18" y2="18"></line></>,
+        // --- НОВЫЕ ИКОНКИ ---
+        ReadySet: <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />,
+        Hangers: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
+        Mirror: <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />,
+        Fireplace: <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.362-3.797zM12 12.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" />,
     };
     return <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>{icons[type]}</svg>;
 };
 
-// Данные для фильтра
+// --- ИЗМЕНЕНИЕ: Добавляем новые категории в массив ---
 export const categories = [
     { name: 'Все товары', value: 'Все товары' },
+    { name: 'Готовый набор', value: 'Готовый набор', icon: 'ReadySet' }, // Новая
+    { name: 'Вешалки', value: 'Вешалки', icon: 'Hangers' },         // Новая
+    { name: 'Зеркало', value: 'Зеркало', icon: 'Mirror' },           // Новая
+    { name: 'Камин', value: 'Камин', icon: 'Fireplace' },         // Новая
     { name: 'Стулья', value: 'Стулья', icon: 'Chairs' },
     { name: 'Столы', value: 'Столы', icon: 'Tables' },
     { name: 'Диваны', value: 'Диваны', icon: 'Sofas' },
     { name: 'Кресла', value: 'Кресла', icon: 'Armchairs' },
-    { name: 'Тумба под ТВ', value: 'Тумба под ТВ', icon: 'TVStand' }, // Убрали лишние флаги, они больше не нужны
+    { name: 'Тумба под ТВ', value: 'Тумба под ТВ', icon: 'TVStand' }, 
     { name: 'Кровати', value: 'Кровати', icon: 'Beds' },
     { name: 'Хранение', value: 'Хранение', icon: 'Storage' },
     { name: 'Освещение', value: 'Освещение', icon: 'Lighting' },
@@ -39,7 +48,6 @@ const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false 
         ? categories.filter(cat => cat.value !== 'Все товары')
         : categories;
 
-    // --- ИЗМЕНЕНИЕ: Логика для главной страницы ---
     if (isHomePage) {
         return (
             <div 
@@ -55,7 +63,6 @@ const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false 
                         key={category.name}
                         to="/catalog"
                         state={{ selectedCategory: category.value }}
-                        // Стиль теперь одинаковый для всех ссылок - белый текст с легкой тенью для читаемости
                         className="flex items-center text-sm font-semibold text-white hover:opacity-80 transition-opacity"
                         style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
                     >
@@ -67,7 +74,6 @@ const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false 
         );
     }
 
-    // --- Логика для страницы каталога (осталась без изменений) ---
     return (
         <div className="flex flex-wrap justify-center gap-3 mb-12">
             {displayedCategories.map(category => (
