@@ -18,7 +18,6 @@ const formatNumberWithSpaces = (value) => {
     return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
-// ИЗМЕНЕНИЕ 1: Создаем единую функцию для обработки ошибок Firestore
 const handleFirestoreError = (error) => {
     if (error.code === 'permission-denied') {
         alert("Че самый умный? :) ");
@@ -27,6 +26,55 @@ const handleFirestoreError = (error) => {
         alert("Произошла непредвиденная ошибка. Подробности в консоли.");
     }
 };
+
+// НОВОЕ: Компонент модального окна для решения конфликтов
+const DuplicateFileModal = ({ conflict, onResolve, applyToAll, setApplyToAll }) => {
+    if (!conflict) return null;
+
+    const { file } = conflict;
+
+    const handleResolve = (resolution) => {
+        onResolve(resolution);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4">Найден дубликат</h3>
+                <p className="mb-4">Файл с именем <span className="font-semibold">{file.name}</span> уже существует в базе. Что вы хотите сделать?</p>
+                
+                <div className="flex items-center mb-6">
+                    <input
+                        id="applyToAll"
+                        type="checkbox"
+                        checked={applyToAll}
+                        onChange={(e) => setApplyToAll(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="applyToAll" className="ml-2 block text-sm text-gray-900">
+                        Применить ко всем последующим дубликатам
+                    </label>
+                </div>
+
+                <div className="flex justify-end gap-4">
+                    <button
+                        onClick={() => handleResolve('skip')}
+                        className="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                    >
+                        Пропустить
+                    </button>
+                    <button
+                        onClick={() => handleResolve('replace')}
+                        className="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    >
+                        Заменить
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const AdminPage = () => {
     const [products, setProducts] = useState([]);
@@ -44,6 +92,11 @@ const AdminPage = () => {
     const [uploadProgress, setUploadProgress] = useState('');
     const [selectedPublished, setSelectedPublished] = useState([]);
     const [selectedDrafts, setSelectedDrafts] = useState([]);
+
+    // НОВОЕ: Состояние для управления модальным окном конфликтов
+    const [conflict, setConflict] = useState(null); // { file, existingDoc, resolve }
+    const [applyToAll, setApplyToAll] = useState(false);
+
 
     useEffect(() => { if (isBatchUpload) { setIsDraft(true); } }, [isBatchUpload]);
 
@@ -137,8 +190,7 @@ const AdminPage = () => {
         setUploadProgress('');
     };
 
-   // ЗАМЕНИ ЭТУ ФУНКЦИЮ В ФАЙЛЕ AdminPage.js
-
+    // ИЗМЕНЕНИЕ: Полностью переработанная функция массовой загрузки
     const handleBatchSubmit = async () => {
         if (imageFiles.length === 0) {
             alert("Пожалуйста, выберите фотографии для массовой загрузки.");
@@ -149,27 +201,67 @@ const AdminPage = () => {
         const totalFiles = imageFiles.length;
         let successfulUploads = 0;
         let skippedUploads = 0;
+        let replacedUploads = 0; // Новый счетчик
         const failedFiles = [];
         
-        // Функция для паузы
+        let batchConflictDecision = null; // null | 'skip' | 'replace'
+        setApplyToAll(false); // Сбрасываем чекбокс перед каждой загрузкой
+
         const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-        // ИЗМЕНЕНИЕ: Убираем "пачки" и используем простой цикл for...of для последовательной загрузки
         for (const [index, file] of imageFiles.entries()) {
-            setUploadProgress(`Загрузка ${index + 1} из ${totalFiles}...`);
+            setUploadProgress(`Обработка ${index + 1} из ${totalFiles}...`);
             
             try {
-                // 1. Проверка на дубликат (остается)
                 const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
                 const existingFileSnapshot = await getDocs(q);
+                let userChoice = null;
 
                 if (!existingFileSnapshot.empty) {
-                    console.log(`Файл ${file.name} уже существует. Пропускаем.`);
-                    skippedUploads++;
-                    continue; // Переходим к следующему файлу в цикле
+                    if (batchConflictDecision) {
+                        userChoice = batchConflictDecision;
+                    } else {
+                        // "Пауза" для ожидания решения пользователя
+                        userChoice = await new Promise(resolve => {
+                            setConflict({ file, existingDoc: existingFileSnapshot.docs[0], resolve });
+                        });
+                        if (applyToAll) {
+                            batchConflictDecision = userChoice;
+                        }
+                        setConflict(null); // Прячем модальное окно
+                    }
+
+                    if (userChoice === 'skip') {
+                        console.log(`Файл ${file.name} уже существует. Пропускаем по решению пользователя.`);
+                        skippedUploads++;
+                        continue;
+                    }
+                    
+                    if (userChoice === 'replace') {
+                        setUploadProgress(`Замена ${file.name}...`);
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                        const result = await res.json();
+                        if (!result.success) throw new Error(`Ошибка ImgBB для файла ${file.name}: ${result.error.message}`);
+                        
+                        const imageUrl = result.data.url;
+                        const existingDocId = existingFileSnapshot.docs[0].id;
+                        const productRef = doc(db, "products", existingDocId);
+                        
+                        // Заменяем массив изображений на новый и обновляем имя файла
+                        await updateDoc(productRef, {
+                            images: [imageUrl],
+                            originalFilename: file.name
+                        });
+                        
+                        replacedUploads++;
+                        continue; // Переходим к следующему файлу
+                    }
                 }
 
-                // 2. Загрузка на ImgBB
+                // Если дубликата нет или пользователь выбрал "заменить", продолжаем как обычно
+                setUploadProgress(`Загрузка ${file.name}...`);
                 const formData = new FormData();
                 formData.append('image', file);
                 const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
@@ -179,8 +271,7 @@ const AdminPage = () => {
                     throw new Error(`Ошибка ImgBB для файла ${file.name}: ${result.error.message}`);
                 }
                 const imageUrl = result.data.url;
-
-                // 3. Создание документа в Firestore
+                
                 const productData = {
                     name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`,
                     price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
@@ -199,19 +290,19 @@ const AdminPage = () => {
                 console.error(error); 
                 failedFiles.push(file.name);
             }
-
-            // 4. Небольшая вежливая пауза после КАЖДОГО файла
-            await delay(300); // Пауза 0.3 секунды, чтобы не перегружать сервер
+            await delay(300);
         }
 
-        // Финальное уведомление
         let summaryMessage = `Массовая загрузка завершена!\nУспешно создано: ${successfulUploads} товаров.`;
+        if (replacedUploads > 0) {
+            summaryMessage += `\nЗаменено существующих: ${replacedUploads}.`;
+        }
         if (skippedUploads > 0) {
             summaryMessage += `\nПропущено дубликатов: ${skippedUploads}.`;
         }
         if (failedFiles.length > 0) {
             summaryMessage += `\n\nНе удалось загрузить: ${failedFiles.length} файлов.`;
-            if (failedFiles.length > 10) {
+             if (failedFiles.length > 10) {
                 summaryMessage += `\nПОЛНЫЙ СПИСОК СМОТРИТЕ В КОНСОЛИ РАЗРАБОТЧИКА (F12).`;
                 console.error("Список файлов, которые не удалось загрузить:", failedFiles);
             } else {
@@ -225,6 +316,7 @@ const AdminPage = () => {
         fetchProducts();
     };
 
+    // ИЗМЕНЕНИЕ: Добавлена проверка на дубликаты для одиночной загрузки
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isBatchUpload) {
@@ -241,6 +333,19 @@ const AdminPage = () => {
             alert("Товар должен иметь хотя бы одно изображение.");
             return;
         }
+
+        // Проверка на дубликаты перед загрузкой (только для новых файлов при создании нового товара)
+        if (!editingProduct && imageFiles.length > 0) {
+            for (const file of imageFiles) {
+                const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
+                const existingFileSnapshot = await getDocs(q);
+                if (!existingFileSnapshot.empty) {
+                    alert(`Ошибка: Файл с именем "${file.name}" уже существует в базе. Пожалуйста, переименуйте файл или выберите другой, чтобы избежать дубликатов.`);
+                    return; // Прерываем отправку
+                }
+            }
+        }
+
         setIsUploading(true);
         setUploadProgress('Загрузка изображений...');
         try {
@@ -278,6 +383,12 @@ const AdminPage = () => {
                 images: imageUrls,
                 status: isDraft ? 'draft' : 'published',
             };
+            
+            // Сохраняем имя файла только если он один (для будущих проверок)
+            if (!editingProduct && imageFiles.length === 1) {
+                productData.originalFilename = imageFiles[0].name;
+            }
+
             if (editingProduct) {
                 const productRef = doc(db, "products", editingProduct.id);
                 await updateDoc(productRef, productData);
@@ -369,10 +480,19 @@ const AdminPage = () => {
 
     return (
         <div className="container mx-auto px-6 py-12">
+            {/* НОВОЕ: Рендер модального окна */}
+            <DuplicateFileModal
+                conflict={conflict}
+                onResolve={(resolution) => conflict?.resolve(resolution)}
+                applyToAll={applyToAll}
+                setApplyToAll={setApplyToAll}
+            />
+
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* ... остальная часть JSX формы без изменений ... */}
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded" />
                     <div />
                     <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (шаблон)" className="p-2 border rounded" />
@@ -430,6 +550,7 @@ const AdminPage = () => {
                 
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-8">
+                        {/* ... остальная часть JSX со списками товаров без изменений ... */}
                         <div>
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold">Публикации ({publishedProducts.length})</h3>
@@ -501,6 +622,7 @@ const AdminPage = () => {
                                 </div>
                             ) : ( <p className="text-gray-500">Нет черновиков.</p> )}
                         </div>
+
                     </div>
                 )}
             </div>
