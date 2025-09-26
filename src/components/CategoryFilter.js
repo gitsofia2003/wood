@@ -95,7 +95,7 @@ const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false 
     if (isHomePage) {
         return (
             <div 
-                className="flex flex-wrap justify-center items-center gap-x-8 gap-y-2 py-4 shadow-lg"
+                className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 py-4 shadow-lg"
                 style={{
                     backgroundImage: `url(${woodTexture})`,
                     backgroundSize: 'cover',
