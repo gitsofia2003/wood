@@ -29,10 +29,11 @@ const handleFirestoreError = (error) => {
 
 // Компонент модального окна для решения конфликтов
 const DuplicateFileModal = ({ conflict, onResolve }) => {
-    if (!conflict) return null;
-
     // Внутреннее состояние для чекбокса, чтобы не зависеть от родителя
     const [isApplyToAllChecked, setIsApplyToAllChecked] = useState(false);
+    
+    if (!conflict) return null;
+
     const { file } = conflict;
 
     const handleResolve = (choice) => {
