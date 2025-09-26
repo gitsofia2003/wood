@@ -27,14 +27,17 @@ const handleFirestoreError = (error) => {
     }
 };
 
-// НОВОЕ: Компонент модального окна для решения конфликтов
-const DuplicateFileModal = ({ conflict, onResolve, applyToAll, setApplyToAll }) => {
+// Компонент модального окна для решения конфликтов
+const DuplicateFileModal = ({ conflict, onResolve }) => {
     if (!conflict) return null;
 
+    // Внутреннее состояние для чекбокса, чтобы не зависеть от родителя
+    const [isApplyToAllChecked, setIsApplyToAllChecked] = useState(false);
     const { file } = conflict;
 
-    const handleResolve = (resolution) => {
-        onResolve(resolution);
+    const handleResolve = (choice) => {
+        // Возвращаем объект с выбором и состоянием галочки
+        onResolve({ choice, applyToAll: isApplyToAllChecked });
     };
 
     return (
@@ -47,8 +50,8 @@ const DuplicateFileModal = ({ conflict, onResolve, applyToAll, setApplyToAll }) 
                     <input
                         id="applyToAll"
                         type="checkbox"
-                        checked={applyToAll}
-                        onChange={(e) => setApplyToAll(e.target.checked)}
+                        checked={isApplyToAllChecked}
+                        onChange={(e) => setIsApplyToAllChecked(e.target.checked)}
                         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     <label htmlFor="applyToAll" className="ml-2 block text-sm text-gray-900">
@@ -92,10 +95,17 @@ const AdminPage = () => {
     const [uploadProgress, setUploadProgress] = useState('');
     const [selectedPublished, setSelectedPublished] = useState([]);
     const [selectedDrafts, setSelectedDrafts] = useState([]);
+    const [conflict, setConflict] = useState(null);
+    const [showLargePreview, setShowLargePreview] = useState(false);
 
-    // НОВОЕ: Состояние для управления модальным окном конфликтов
-    const [conflict, setConflict] = useState(null); // { file, existingDoc, resolve }
-    const [applyToAll, setApplyToAll] = useState(false);
+    useEffect(() => {
+        // Логика показа большого превью при подготовке черновика к публикации
+        if (editingProduct && !isDraft && imagePreviews.length > 0) {
+            setShowLargePreview(true);
+        } else {
+            setShowLargePreview(false);
+        }
+    }, [editingProduct, isDraft, imagePreviews]);
 
 
     useEffect(() => { if (isBatchUpload) { setIsDraft(true); } }, [isBatchUpload]);
@@ -188,9 +198,9 @@ const AdminPage = () => {
         setIsDraft(false);
         setIsBatchUpload(false);
         setUploadProgress('');
+        setShowLargePreview(false); 
     };
 
-    // ИЗМЕНЕНИЕ: Полностью переработанная функция массовой загрузки
     const handleBatchSubmit = async () => {
         if (imageFiles.length === 0) {
             alert("Пожалуйста, выберите фотографии для массовой загрузки.");
@@ -201,11 +211,10 @@ const AdminPage = () => {
         const totalFiles = imageFiles.length;
         let successfulUploads = 0;
         let skippedUploads = 0;
-        let replacedUploads = 0; // Новый счетчик
+        let replacedUploads = 0; 
         const failedFiles = [];
         
-        let batchConflictDecision = null; // null | 'skip' | 'replace'
-        setApplyToAll(false); // Сбрасываем чекбокс перед каждой загрузкой
+        let batchConflictDecision = null;
 
         const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
@@ -215,24 +224,24 @@ const AdminPage = () => {
             try {
                 const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
                 const existingFileSnapshot = await getDocs(q);
-                let userChoice = null;
-
+                
                 if (!existingFileSnapshot.empty) {
-                    if (batchConflictDecision) {
-                        userChoice = batchConflictDecision;
-                    } else {
-                        // "Пауза" для ожидания решения пользователя
-                        userChoice = await new Promise(resolve => {
+                    let userChoice = batchConflictDecision;
+
+                    if (!userChoice) { 
+                        const userDecision = await new Promise(resolve => {
                             setConflict({ file, existingDoc: existingFileSnapshot.docs[0], resolve });
                         });
-                        if (applyToAll) {
+                        
+                        setConflict(null);
+                        
+                        userChoice = userDecision.choice; 
+                        if (userDecision.applyToAll) {
                             batchConflictDecision = userChoice;
                         }
-                        setConflict(null); // Прячем модальное окно
                     }
 
                     if (userChoice === 'skip') {
-                        console.log(`Файл ${file.name} уже существует. Пропускаем по решению пользователя.`);
                         skippedUploads++;
                         continue;
                     }
@@ -249,18 +258,16 @@ const AdminPage = () => {
                         const existingDocId = existingFileSnapshot.docs[0].id;
                         const productRef = doc(db, "products", existingDocId);
                         
-                        // Заменяем массив изображений на новый и обновляем имя файла
                         await updateDoc(productRef, {
                             images: [imageUrl],
                             originalFilename: file.name
                         });
                         
                         replacedUploads++;
-                        continue; // Переходим к следующему файлу
+                        continue; 
                     }
                 }
 
-                // Если дубликата нет или пользователь выбрал "заменить", продолжаем как обычно
                 setUploadProgress(`Загрузка ${file.name}...`);
                 const formData = new FormData();
                 formData.append('image', file);
@@ -316,7 +323,6 @@ const AdminPage = () => {
         fetchProducts();
     };
 
-    // ИЗМЕНЕНИЕ: Добавлена проверка на дубликаты для одиночной загрузки
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isBatchUpload) {
@@ -334,14 +340,13 @@ const AdminPage = () => {
             return;
         }
 
-        // Проверка на дубликаты перед загрузкой (только для новых файлов при создании нового товара)
         if (!editingProduct && imageFiles.length > 0) {
             for (const file of imageFiles) {
                 const q = query(collection(db, "products"), where("originalFilename", "==", file.name));
                 const existingFileSnapshot = await getDocs(q);
                 if (!existingFileSnapshot.empty) {
                     alert(`Ошибка: Файл с именем "${file.name}" уже существует в базе. Пожалуйста, переименуйте файл или выберите другой, чтобы избежать дубликатов.`);
-                    return; // Прерываем отправку
+                    return;
                 }
             }
         }
@@ -384,7 +389,6 @@ const AdminPage = () => {
                 status: isDraft ? 'draft' : 'published',
             };
             
-            // Сохраняем имя файла только если он один (для будущих проверок)
             if (!editingProduct && imageFiles.length === 1) {
                 productData.originalFilename = imageFiles[0].name;
             }
@@ -480,19 +484,35 @@ const AdminPage = () => {
 
     return (
         <div className="container mx-auto px-6 py-12">
-            {/* НОВОЕ: Рендер модального окна */}
             <DuplicateFileModal
                 conflict={conflict}
                 onResolve={(resolution) => conflict?.resolve(resolution)}
-                applyToAll={applyToAll}
-                setApplyToAll={setApplyToAll}
             />
 
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
                 <h2 className="text-2xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* ... остальная часть JSX формы без изменений ... */}
+                    
+                    {/* Большой предпросмотр при публикации */}
+                    {showLargePreview && (
+                        <div className="md:col-span-2 p-4 border-2 border-dashed border-blue-400 rounded-lg bg-blue-50 mb-6">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Предпросмотр публикации:</h3>
+                            <div className="flex flex-col sm:flex-row gap-4 items-start">
+                                <img 
+                                    src={imagePreviews[0]} 
+                                    alt="Предпросмотр" 
+                                    className="w-48 h-48 object-cover rounded-md border bg-white shadow-sm" 
+                                />
+                                <div>
+                                    <p className="text-xl font-bold text-gray-900">{newProduct.name || 'Название еще не указано'}</p>
+                                    <p className="text-md text-gray-600 mt-1">{newProduct.category || 'Категория не выбрана'}</p>
+                                    <p className="text-2xl font-bold text-red-600 mt-4">{newProduct.price ? (newProduct.price + ' ₽') : 'Цена не указана'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
                     <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (шаблон для масс)" className="p-2 border rounded" />
                     <div />
                     <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена (шаблон)" className="p-2 border rounded" />
@@ -550,7 +570,6 @@ const AdminPage = () => {
                 
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-8">
-                        {/* ... остальная часть JSX со списками товаров без изменений ... */}
                         <div>
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold">Публикации ({publishedProducts.length})</h3>
@@ -622,7 +641,6 @@ const AdminPage = () => {
                                 </div>
                             ) : ( <p className="text-gray-500">Нет черновиков.</p> )}
                         </div>
-
                     </div>
                 )}
             </div>
