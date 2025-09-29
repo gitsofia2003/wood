@@ -66,7 +66,7 @@ const ACCESS_KEY = process.env.REACT_APP_S3_ACCESS_KEY;
 const SECRET_KEY = process.env.REACT_APP_S3_SECRET_KEY;
 
 const s3Client = new S3Client({
-    endpoint: `https://s3.${REGION}.selstorage.ru`,
+    endpoint: `https://s3.${REGION}.storage.selcloud.ru`,
     region: REGION,
     credentials: {
         accessKeyId: ACCESS_KEY,
