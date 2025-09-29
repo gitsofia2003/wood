@@ -86,6 +86,9 @@ export default function App() {
     <Router>
       <div className="bg-white text-dark-gray flex flex-col min-h-screen">
         <Header user={user} />
+        <p style={{ textAlign: 'center', padding: '10px', background: 'red', color: 'white', fontWeight: 'bold' }}>
+          ID проекта Firebase: {process.env.REACT_APP_FIREBASE_PROJECT_ID}
+        </p>
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<HomePage />} />
