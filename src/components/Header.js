@@ -19,7 +19,7 @@ const Header = ({ user }) => {
     { name: 'Каталог', path: '/catalog' },
     { name: 'Гарантия', path: '/warranty' },
     { name: 'О нас', path: '/about' },
-    { name: 'Контакты', path: '/contact' },
+    { name: 'Контакты и адреса', path: '/contact' },
   ];
 
   const handleLogout = async () => {
