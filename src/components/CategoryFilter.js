@@ -61,7 +61,7 @@ const CategoryIcon = ({ type }) => {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-2 w-2"
+            className="h-2.5 w-2.5"
             viewBox={iconData.viewBox}
         >
             {iconData.content}

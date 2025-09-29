@@ -42,7 +42,7 @@ function PrevArrow(props) {
     );
 }
 
-const IMGBB_API_KEY = "c38b7ef21c516acf7c50c35d305a0c4a";
+const IMGBB_API_KEY = "bb1b30e68a10640df0cea07e56446401";
 const availableMaterials = [
     { name: "Вишня", color: "#6D282B" },
     { name: "Бук", color: "#DAB88F" },
@@ -530,6 +530,63 @@ const AdminPage = () => {
         }
     };
 
+    const handleCategorySync = async () => {
+        if (!window.confirm("Эта операция обновит категории у старых товаров до актуальных названий. Это может занять некоторое время. Продолжить?")) {
+            return;
+        }
+
+        alert("Начинаю синхронизацию. Пожалуйста, не закрывайте страницу...");
+        setIsLoading(true);
+
+        // Здесь мы указываем, какие старые названия на какие новые нужно поменять
+        // Вы можете добавлять сюда другие пары, если проблема повторится
+        const nameMapping = {
+            "Стулья и табуретки": "Стулья и табуреты", // Пример: старое название -> новое
+            "Туалетные женские столики": "Туалетные столики",
+            "Идеи комплектов": "Комплекты",
+            "Тумбы под телевизор": "ТВ тумбы",
+            "Столики для прихожей": "Столы в прихожую",
+            // Добавьте другие, если нужно
+        };
+
+        try {
+            const productsRef = collection(db, "products");
+            const snapshot = await getDocs(productsRef);
+            const batch = writeBatch(db);
+            let updatedCount = 0;
+
+            snapshot.docs.forEach(document => {
+                const product = document.data();
+                const currentCategory = product.category;
+
+                // Если категория товара есть в нашем списке "старых" названий
+                if (nameMapping[currentCategory]) {
+                    const newCategory = nameMapping[currentCategory];
+                    // И если она действительно отличается от новой
+                    if (currentCategory !== newCategory) {
+                        const docRef = doc(db, "products", document.id);
+                        batch.update(docRef, { category: newCategory });
+                        updatedCount++;
+                    }
+                }
+            });
+
+            if (updatedCount > 0) {
+                await batch.commit();
+                alert(`Синхронизация завершена! Обновлено ${updatedCount} товаров.`);
+            } else {
+                alert("Синхронизация завершена. Товаров для обновления не найдено.");
+            }
+
+            fetchProducts(); // Обновляем список товаров на странице
+        } catch (error) {
+            console.error("Ошибка синхронизации:", error);
+            alert("Произошла ошибка во время синхронизации. Подробности в консоли.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const publishedProducts = products.filter(p => {
         if (p.status === 'draft') return false;
         const categoryMatch = activeCategory === 'Все товары' || p.category === activeCategory;
@@ -657,6 +714,14 @@ const AdminPage = () => {
             
             <div>
                 <h2 className="text-2xl font-semibold mb-4">Список товаров</h2>
+                {/* --- НОВАЯ КНОПКА --- */}
+                        <button 
+                            onClick={handleCategorySync}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors"
+                        >
+                            Синхронизировать категории
+                        </button>
+                    
                 <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
                 <div className="mb-6 flex justify-center"><MaterialFilter availableMaterials={availableMaterials} activeMaterial={activeMaterial} setActiveMaterial={setActiveMaterial} /></div>
                 
