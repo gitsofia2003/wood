@@ -17,11 +17,7 @@ import MaterialFilter from '../components/MaterialFilter';
 function NextArrow(props) {
     const { className, style, onClick } = props;
     return (
-        <div
-            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
-            style={{ ...style, right: '15px' }}
-            onClick={onClick}
-        >
+        <div className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`} style={{ ...style, right: '15px' }} onClick={onClick}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
         </div>
     );
@@ -30,11 +26,7 @@ function NextArrow(props) {
 function PrevArrow(props) {
     const { className, style, onClick } = props;
     return (
-        <div
-            className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`}
-            style={{ ...style, left: '15px' }}
-            onClick={onClick}
-        >
+        <div className={`${className} z-10 w-10 h-10 flex items-center justify-center bg-black bg-opacity-30 text-white rounded-full hover:bg-opacity-50 transition-opacity`} style={{ ...style, left: '15px' }} onClick={onClick}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
         </div>
     );
@@ -82,19 +74,12 @@ const s3Client = new S3Client({
     },
 });
 
-// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ФАЙЛА ---
+// --- Функция загрузки файла в Selectel ---
 const uploadFileToS3 = async (file) => {
     const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-    
-    // Преобразуем файл в ArrayBuffer перед отправкой
     const fileBuffer = await file.arrayBuffer();
-
     const params = {
-        Bucket: BUCKET_NAME,
-        Key: fileName,
-        Body: fileBuffer, // Используем buffer вместо file
-        ContentType: file.type,
-        ACL: 'public-read',
+        Bucket: BUCKET_NAME, Key: fileName, Body: fileBuffer, ContentType: file.type, ACL: 'public-read',
     };
     try {
         await s3Client.send(new PutObjectCommand(params));
@@ -105,9 +90,7 @@ const uploadFileToS3 = async (file) => {
     }
 };
 
-
 const AdminPage = () => {
-    // ... (все состояния useState остаются без изменений) ...
     const [products, setProducts] = useState([]);
     const [newProduct, setNewProduct] = useState({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
     const [discount, setDiscount] = useState(0);
@@ -126,28 +109,30 @@ const AdminPage = () => {
     const [conflict, setConflict] = useState(null);
     const [showLargePreview, setShowLargePreview] = useState(false);
     const [isBatchPublish, setIsBatchPublish] = useState(false);
-    
-    // ... (все useEffect остаются без изменений) ...
+
     useEffect(() => {
         if (editingProduct && !isDraft && imagePreviews.length > 0) { setShowLargePreview(true); } else { setShowLargePreview(false); }
     }, [editingProduct, isDraft, imagePreviews]);
+
     useEffect(() => {
         const original = parseFloat(String(newProduct.originalPrice).replace(/[^0-9]/g, ''));
         const sale = parseFloat(String(newProduct.price).replace(/[^0-9]/g, ''));
         if (original > 0 && sale > 0 && original > sale) { setDiscount(Math.round(((original - sale) / original) * 100)); } else { setDiscount(0); }
     }, [newProduct.price, newProduct.originalPrice]);
+
     const fetchProducts = async () => {
         setIsLoading(true);
         const productSnapshot = await getDocs(collection(db, "products"));
         setProducts(productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         setIsLoading(false);
     };
+
     useEffect(() => { fetchProducts(); }, []);
+    
     useEffect(() => {
         return () => { imagePreviews.forEach(preview => { if (preview.startsWith('blob:')) { URL.revokeObjectURL(preview); } }); };
     }, [imagePreviews]);
 
-    // ... (все функции-обработчики до handleSubmit остаются без изменений) ...
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         if (name === 'price' || name === 'originalPrice') {
@@ -156,6 +141,7 @@ const AdminPage = () => {
             setNewProduct(p => ({ ...p, [name]: value }));
         }
     };
+
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);
         if (newFiles.length === 0) return;
@@ -163,6 +149,7 @@ const AdminPage = () => {
         setImagePreviews(prev => [...prev, ...newFiles.map(f => URL.createObjectURL(f))]);
         e.target.value = null;
     };
+
     const handleRemoveImage = (indexToRemove) => {
         const urlToRemove = imagePreviews[indexToRemove];
         if (urlToRemove.startsWith('blob:')) {
@@ -172,6 +159,7 @@ const AdminPage = () => {
         }
         setImagePreviews(prev => prev.filter((_, i) => i !== indexToRemove));
     };
+
     const handleEditClick = (product) => {
         setEditingProduct(product);
         setNewProduct({
@@ -189,6 +177,7 @@ const AdminPage = () => {
         setIsBatchUpload(false);
         window.scrollTo(0, 0);
     };
+
     const cancelEdit = () => {
         setEditingProduct(null);
         setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
@@ -202,7 +191,6 @@ const AdminPage = () => {
         setIsBatchPublish(false);
     };
 
-    // --- Функции handleSubmit и handleBatchSubmit теперь используют исправленную функцию uploadFileToS3 ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isBatchUpload) { await handleBatchSubmit(); return; }
@@ -219,7 +207,7 @@ const AdminPage = () => {
             }
             setUploadProgress('Сохранение данных...');
             const productData = {
-                name: newProduct.name || '',
+                name: newProduct.name || '', // Имя остается, но может быть пустым
                 price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
                 originalPrice: newProduct.originalPrice ? formatNumberWithSpaces(newProduct.originalPrice) + ' ₽' : '',
                 category: newProduct.category,
@@ -228,11 +216,11 @@ const AdminPage = () => {
                 description: newProduct.description || '',
                 images: imageUrls,
                 status: isDraft ? 'draft' : 'published',
+                originalFilename: imageFiles.length > 0 ? imageFiles[0].name : (editingProduct?.originalFilename || '')
             };
             if (editingProduct) {
                 await updateDoc(doc(db, "products", editingProduct.id), productData);
             } else {
-                productData.originalFilename = imageFiles.length > 0 ? imageFiles[0].name : '';
                 await addDoc(collection(db, "products"), productData);
             }
             cancelEdit();
@@ -274,7 +262,7 @@ const AdminPage = () => {
                 setUploadProgress(`Загрузка ${file.name}...`);
                 const imageUrl = await uploadFileToS3(file);
                 const productData = {
-                    name: newProduct.name ? `${newProduct.name} - ${file.name.replace(/\.[^/.]+$/, "")}` : `${newProduct.category} - ${file.name.replace(/\.[^/.]+$/, "")}`,
+                    name: newProduct.name ? `${newProduct.name} - ${file.name.replace(/\.[^/.]+$/, "")}` : '', // Имя по умолчанию пустое
                     price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
                     category: newProduct.category,
                     description: newProduct.description || '',
@@ -294,11 +282,65 @@ const AdminPage = () => {
         fetchProducts();
     };
 
-    // ... (остальные функции-обработчики и JSX остаются без изменений) ...
-    // ... handleDeleteProduct, handleToggleSelection, handleSelectAll, handleUnpublishSelected, handleDeleteSelected, handleCategorySync ...
+    const handleDeleteProduct = async (productId) => {
+        if (window.confirm("Удалить этот товар?")) {
+            try { await deleteDoc(doc(db, "products", productId)); fetchProducts(); } catch (error) { handleFirestoreError(error); }
+        }
+    };
+    
+    const handleToggleSelection = (id, listType) => {
+        const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
+        setSelection(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const handleSelectAll = (listType, productList) => {
+        const setSelection = listType === 'published' ? setSelectedPublished : setSelectedDrafts;
+        const currentSelection = listType === 'published' ? selectedPublished : selectedDrafts;
+        if (currentSelection.length === productList.length && productList.length > 0) { setSelection([]); } else { setSelection(productList.map(p => p.id)); }
+    };
+    
+    const handleUnpublishSelected = async () => {
+        if (selectedPublished.length === 0 || !window.confirm(`Снять с публикации ${selectedPublished.length} товаров?`)) return;
+        const batch = writeBatch(db);
+        selectedPublished.forEach(id => batch.update(doc(db, "products", id), { status: "draft" }));
+        await batch.commit();
+        setSelectedPublished([]);
+        fetchProducts();
+    };
+
+    const handleDeleteSelected = async (listType) => {
+        const selection = listType === 'published' ? selectedPublished : selectedDrafts;
+        if (selection.length === 0 || !window.confirm(`Удалить ${selection.length} товаров?`)) return;
+        const batch = writeBatch(db);
+        selection.forEach(id => batch.delete(doc(db, "products", id)));
+        await batch.commit();
+        (listType === 'published' ? setSelectedPublished : setSelectedDrafts)([]);
+        fetchProducts();
+    };
+
+    const handleCategorySync = async () => {
+        if (!window.confirm("Обновить категории у старых товаров?")) return;
+        setIsLoading(true);
+        const nameMapping = { "Стулья и табуретки": "Стулья и табуреты", "Туалетные женские столики": "Туалетные столики", "Идеи комплектов": "Комплекты", "Тумбы под телевизор": "ТВ тумбы", "Столики для прихожей": "Столы в прихожую" };
+        const snapshot = await getDocs(collection(db, "products"));
+        const batch = writeBatch(db);
+        let updatedCount = 0;
+        snapshot.docs.forEach(document => {
+            const cat = document.data().category;
+            if (nameMapping[cat] && cat !== nameMapping[cat]) {
+                batch.update(document.ref, { category: nameMapping[cat] });
+                updatedCount++;
+            }
+        });
+        if (updatedCount > 0) { await batch.commit(); alert(`Обновлено ${updatedCount} товаров.`); } else { alert("Товаров для обновления не найдено."); }
+        fetchProducts();
+        setIsLoading(false);
+    };
+
     const publishedProducts = products.filter(p => p.status !== 'draft' && (activeCategory === 'Все товары' || p.category === activeCategory) && (activeMaterial === 'Все материалы' || p.material === activeMaterial));
     const draftProducts = products.filter(p => p.status === 'draft');
     const sliderSettings = { dots: true, infinite: false, speed: 500, slidesToShow: 1, slidesToScroll: 1, nextArrow: <NextArrow />, prevArrow: <PrevArrow /> };
+
     return (
         <div className="container mx-auto px-6 py-12">
             <DuplicateFileModal conflict={conflict} onResolve={(res) => conflict?.resolve(res)} />
@@ -320,14 +362,14 @@ const AdminPage = () => {
                             {showLargePreview && (
                                 <div className="p-4 border-2 border-dashed border-blue-400 bg-blue-50"><h3 className="text-lg font-semibold mb-2">Предпросмотр публикации:</h3><p className="text-xl font-bold">{newProduct.name || 'Название?'}</p><p className="text-2xl font-bold text-red-600 mt-2">{newProduct.price ? `${newProduct.price} ₽` : 'Цена?'}</p></div>
                             )}
-                            <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара" className="p-2 border rounded w-full" />
+                            <input name="name" value={newProduct.name} onChange={handleInputChange} placeholder="Название товара (необязательно)" className="p-2 border rounded w-full" />
                             <div className="flex gap-4">
                                 <input name="originalPrice" value={newProduct.originalPrice} onChange={handleInputChange} placeholder="Старая цена" className="p-2 border rounded w-1/2" />
                                 <input name="price" value={newProduct.price} onChange={handleInputChange} placeholder="Цена" className="p-2 border rounded w-1/2" />
                             </div>
                             {discount > 0 && ( <div className="text-center p-2 bg-green-100 text-green-800 rounded-md">Скидка: {discount}%</div> )}
                             <div className="flex gap-4">
-                                <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded w-1/2"><option value="">Категория</option>{categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))}</select>
+                                <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded w-1/2"><option value="">Категория*</option>{categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))}</select>
                                 <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры" className="p-2 border rounded w-1/2" />
                             </div>
                             <select name="material" value={newProduct.material} onChange={handleInputChange} className="p-2 border rounded w-full"><option value="">Материал</option>{availableMaterials.map(m => ( <option key={m.name} value={m.name}>{m.name}</option> ))}</select>
@@ -363,25 +405,25 @@ const AdminPage = () => {
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold">Публикации ({publishedProducts.length})</h3>
                                 <div className="flex items-center gap-4">
-                                    <button onClick={() => handleSelectAll('published', publishedProducts)} disabled={publishedProducts.length === 0}>Выделить все</button>
-                                    {selectedPublished.length > 0 && ( <> <button onClick={handleUnpublishSelected}>Снять с публикации</button> <button onClick={() => handleDeleteSelected('published')}>Удалить ({selectedPublished.length})</button> </> )}
+                                    <button onClick={() => handleSelectAll('published', publishedProducts)} disabled={publishedProducts.length === 0} className="text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400">Выделить все</button>
+                                    {selectedPublished.length > 0 && ( <> <button onClick={handleUnpublishSelected} className="text-sm font-semibold text-yellow-600 hover:text-yellow-800">Снять с публикации</button> <button onClick={() => handleDeleteSelected('published')} className="text-sm font-semibold text-red-600 hover:text-red-800">Удалить ({selectedPublished.length})</button> </> )}
                                 </div>
                             </div>
                             {publishedProducts.length > 0 ? (
-                                <div className="space-y-4">{publishedProducts.map(p => ( <div key={p.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg"><div className="flex items-center gap-4"><input type="checkbox" checked={selectedPublished.includes(p.id)} onChange={() => handleToggleSelection(p.id, 'published')} /><img src={p.images?.[0]} alt={p.name} className="w-16 h-16 object-contain rounded-md" /><div><p className="font-bold">{p.name}</p><p className="text-sm text-gray-600">{p.category} - {p.price}</p></div></div><div className='flex gap-4'><button onClick={() => handleEditClick(p)}>Редактировать</button><button onClick={() => handleDeleteProduct(p.id)}>Удалить</button></div></div> ))}</div>
-                            ) : (<p>Нет опубликованных товаров, соответствующих фильтрам.</p>)}
+                                <div className="space-y-4">{publishedProducts.map(p => ( <div key={p.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg"><div className="flex items-center gap-4 flex-grow"><input type="checkbox" className="h-5 w-5" checked={selectedPublished.includes(p.id)} onChange={() => handleToggleSelection(p.id, 'published')} /><img src={p.images?.[0]} alt={p.name || 'Товар'} className="w-16 h-16 object-contain rounded-md" /><div><p className="font-bold">{p.name || p.category}</p><p className="text-sm text-gray-600">{p.category} - {p.price}</p></div></div><div className='flex gap-4'><button onClick={() => handleEditClick(p)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button><button onClick={() => handleDeleteProduct(p.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button></div></div> ))}</div>
+                            ) : (<p className="text-gray-500">Нет опубликованных товаров, соответствующих фильтрам.</p>)}
                         </div>
                         <div>
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold">Черновик ({draftProducts.length})</h3>
                                 <div className="flex items-center gap-4">
-                                    <button onClick={() => handleSelectAll('drafts', draftProducts)} disabled={draftProducts.length === 0}>Выделить все</button>
-                                    {selectedDrafts.length > 0 && ( <button onClick={() => handleDeleteSelected('drafts')}>Удалить ({selectedDrafts.length})</button> )}
+                                    <button onClick={() => handleSelectAll('drafts', draftProducts)} disabled={draftProducts.length === 0} className="text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400">Выделить все</button>
+                                    {selectedDrafts.length > 0 && ( <button onClick={() => handleDeleteSelected('drafts')} className="text-sm font-semibold text-red-600 hover:text-red-800">Удалить ({selectedDrafts.length})</button> )}
                                 </div>
                             </div>
                              {draftProducts.length > 0 ? (
-                                <div className="space-y-4">{draftProducts.map(p => ( <div key={p.id} className="flex items-center justify-between bg-yellow-50 p-4 rounded-lg"><div className="flex items-center gap-4"><input type="checkbox" checked={selectedDrafts.includes(p.id)} onChange={() => handleToggleSelection(p.id, 'drafts')} /><img src={p.images?.[0]} alt={p.name} className="w-16 h-16 object-contain rounded-md" /><div><p className="font-bold">{p.name}</p><p className="text-sm text-gray-600">{p.category} - {p.price}</p></div></div><div className='flex gap-4'><button onClick={() => handleEditClick(p)}>Редактировать</button><button onClick={() => handleDeleteProduct(p.id)}>Удалить</button></div></div> ))}</div>
-                            ) : ( <p>Нет черновиков.</p> )}
+                                <div className="space-y-4">{draftProducts.map(p => ( <div key={p.id} className="flex items-center justify-between bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400"><div className="flex items-center gap-4 flex-grow"><input type="checkbox" className="h-5 w-5" checked={selectedDrafts.includes(p.id)} onChange={() => handleToggleSelection(p.id, 'drafts')} /><img src={p.images?.[0]} alt={p.name || 'Товар'} className="w-16 h-16 object-contain rounded-md" /><div><p className="font-bold">{p.name || 'Черновик'}</p><p className="text-sm text-gray-600">{p.category || 'Нет категории'} - {p.price}</p></div></div><div className='flex gap-4'><button onClick={() => handleEditClick(p)} className="text-blue-500 hover:text-blue-700 font-semibold">Редактировать</button><button onClick={() => handleDeleteProduct(p.id)} className="text-red-500 hover:text-red-700 font-semibold">Удалить</button></div></div> ))}</div>
+                            ) : ( <p className="text-gray-500">Нет черновиков.</p> )}
                         </div>
                     </div>
                 )}
@@ -391,4 +433,3 @@ const AdminPage = () => {
 };
 
 export default AdminPage;
-
