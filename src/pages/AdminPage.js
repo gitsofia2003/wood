@@ -135,6 +135,7 @@ const AdminPage = () => {
     const [selectedDrafts, setSelectedDrafts] = useState([]);
     const [conflict, setConflict] = useState(null);
     const [showLargePreview, setShowLargePreview] = useState(false);
+    const [isBatchPublish, setIsBatchPublish] = useState(false);
 
     useEffect(() => {
         // Логика показа большого превью при подготовке черновика к публикации
@@ -245,6 +246,12 @@ const AdminPage = () => {
             return;
         }
 
+        if (isBatchPublish && !newProduct.category) {
+            alert("Для массовой публикации необходимо выбрать категорию в форме.");
+            setIsUploading(false);
+            return;
+        }
+
         setIsUploading(true);
         const totalFiles = imageFiles.length;
         let successfulUploads = 0;
@@ -317,17 +324,30 @@ const AdminPage = () => {
                 }
                 const imageUrl = result.data.url;
                 
+                // --- ИЗМЕНЕНИЕ ЗДЕСЬ: Логика создания данных о товаре ---
                 const productData = {
-                    name: newProduct.name ? `${newProduct.name} - ${file.name}` : `ЧЕРНОВИК: ${file.name}`,
+                    // Если имя в шаблоне пустое, генерируем его из категории и имени файла
+                    name: newProduct.name 
+                        ? `${newProduct.name} - ${file.name.replace(/\.[^/.]+$/, "")}` 
+                        : `${newProduct.category} - ${file.name.replace(/\.[^/.]+$/, "")}`,
+                    
+                    // Если цена в шаблоне пустая, ставим "Цена по запросу"
                     price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
-                    category: newProduct.category || '',
+                    
+                    // Категория берется из формы (мы уже проверили, что она есть)
+                    category: newProduct.category,
+
+                    // Другие данные берем из шаблона или ставим заглушки
                     description: newProduct.description || '',
-                    dimensions: newProduct.dimensions || '',
+                    dimensions: newProduct.dimensions || 'Размеры по запросу',
                     material: newProduct.material || '',
                     images: [imageUrl],
-                    status: 'draft',
+
+                    // Статус зависит от новой галочки
+                    status: isBatchPublish ? 'published' : 'draft',
                     originalFilename: file.name
                 };
+
                 await addDoc(collection(db, "products"), productData);
                 successfulUploads++;
 
@@ -337,7 +357,6 @@ const AdminPage = () => {
             }
             await delay(300);
         }
-
         let summaryMessage = `Массовая загрузка завершена!\nУспешно создано: ${successfulUploads} товаров.`;
         if (replacedUploads > 0) {
             summaryMessage += `\nЗаменено существующих: ${replacedUploads}.`;
@@ -600,17 +619,32 @@ const AdminPage = () => {
                     </div>
 
                     {/* Кнопки и чекбоксы под колонками */}
+                    {/* Кнопки и чекбоксы под колонками */}
                     <div className="border-t mt-6 pt-6">
+                        {/* Галочка для включения режима массовой загрузки */}
                         {!editingProduct && (
                             <div className="flex items-center mb-4">
                                 <input id="isBatchUpload" type="checkbox" checked={isBatchUpload} onChange={(e) => setIsBatchUpload(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
                                 <label htmlFor="isBatchUpload" className="ml-2 block text-sm font-bold text-gray-700">Загрузить каждое фото как отдельный товар</label>
                             </div>
                         )}
-                        <div className="flex items-center mb-6">
-                            <input id="isDraft" type="checkbox" checked={isDraft} onChange={(e) => setIsDraft(e.target.checked)} disabled={isBatchUpload} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-200" />
-                            <label htmlFor="isDraft" className="ml-2 block text-sm text-gray-700">Сохранить как черновик (можно без данных)</label>
-                        </div>
+
+                        {/* --- ИЗМЕНЕНИЕ ЗДЕСЬ --- */}
+                        {/* В зависимости от режима, показываем РАЗНЫЕ галочки */}
+                        {isBatchUpload ? (
+                            // Новая галочка, которая появляется ТОЛЬКО при массовой загрузке
+                            <div className="flex items-center mb-6">
+                                <input id="isBatchPublish" type="checkbox" checked={isBatchPublish} onChange={(e) => setIsBatchPublish(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <label htmlFor="isBatchPublish" className="ml-2 block text-sm text-gray-700">Опубликовать сразу (требуется категория)</label>
+                            </div>
+                        ) : (
+                            // Старая галочка, которая показывается ТОЛЬКО при одиночной загрузке
+                            <div className="flex items-center mb-6">
+                                <input id="isDraft" type="checkbox" checked={isDraft} onChange={(e) => setIsDraft(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <label htmlFor="isDraft" className="ml-2 block text-sm text-gray-700">Сохранить как черновик</label>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-4">
                             <button type="submit" disabled={isUploading} className="w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 transition-colors">
                                 {isUploading ? (uploadProgress || 'Загрузка...') : (editingProduct ? 'Сохранить изменения' : 'Добавить товар')}
