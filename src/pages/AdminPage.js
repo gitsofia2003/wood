@@ -72,7 +72,6 @@ const s3Client = new S3Client({
         accessKeyId: ACCESS_KEY,
         secretAccessKey: SECRET_KEY,
     },
-    forcePathStyle: true,
 });
 
 // --- Функция загрузки файла в Selectel ---
