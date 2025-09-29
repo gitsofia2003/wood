@@ -79,7 +79,10 @@ const uploadFileToS3 = async (file) => {
     const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
     const fileBuffer = await file.arrayBuffer();
     const params = {
-        Bucket: BUCKET_NAME, Key: fileName, Body: fileBuffer, ContentType: file.type, ACL: 'public-read',
+        Bucket: BUCKET_NAME, 
+        Key: fileName, 
+        Body: fileBuffer, 
+        ContentType: file.type,
     };
     try {
         await s3Client.send(new PutObjectCommand(params));
