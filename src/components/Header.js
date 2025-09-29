@@ -17,6 +17,7 @@ const Header = ({ user }) => {
   const navLinks = [
     { name: 'Главная', path: '/' },
     { name: 'Каталог', path: '/catalog' },
+    { name: 'Гарантия', path: '/warranty' },
     { name: 'О нас', path: '/about' },
     { name: 'Контакты', path: '/contact' },
   ];

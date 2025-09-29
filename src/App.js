@@ -15,6 +15,9 @@ import ProductPage from './pages/ProductPage';
 import UsPage from './pages/Us';
 import ContactPage from './pages/ContactPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import OfferIndividualsPage from './pages/OfferIndividualsPage';
+import OfferEntitiesPage from './pages/OfferEntitiesPage';
+import WarrantyPage from './pages/WarrantyPage';
 
 // Компонент для защиты админ-панели
 const PrivateRoute = ({ user, children }) => {
@@ -92,6 +95,9 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/product/:productId" element={<ProductPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/offer-individuals" element={<OfferIndividualsPage />} /> 
+            <Route path="/offer-entities" element={<OfferEntitiesPage />} />
+            <Route path="/warranty" element={<WarrantyPage />} />   
             <Route 
               path="/admin" 
               element={
