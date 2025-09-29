@@ -98,7 +98,6 @@ const ProductCard = ({ product }) => {
                     )}
                 </div>
                 <div className="pt-4 text-center">
-                    <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
                     <hr className="my-2 border-gray-200"/>
                     <div className="text-xl font-bold text-gray-800 my-2 h-8 flex justify-center items-center">
                         {discount > 0 ? (

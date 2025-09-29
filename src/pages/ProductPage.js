@@ -147,7 +147,6 @@ const ProductPage = () => {
                     {/* --- MOBILE: отдельный упрощённый порядок */}
                     <div className="lg:hidden w-full">
                         <div className="flex items-start justify-between">
-                            <h1 className="text-3xl font-bold text-gray-800">{product.name}</h1>
                             {discount > 0 && (
                                 <span className="ml-4 inline-block bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">
                                     Скидка {discount}%
@@ -193,7 +192,6 @@ const ProductPage = () => {
 
                     {/* --- DESKTOP: оригинальный блок */}
                     <div className="hidden lg:block lg:w-1/4 lg:pl-8">
-                        <h1 className="text-4xl font-bold text-gray-800">{product.name}</h1>
                         <p className="text-lg text-gray-500 mt-2">{product.category}</p>
 
                         {/* ИЗМЕНЕНИЕ: Отображаем материал вместо цвета */}
