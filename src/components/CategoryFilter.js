@@ -70,20 +70,21 @@ const CategoryIcon = ({ type }) => {
 };
 
 
+// ЗАМЕНИТЕ СТАРЫЙ МАССИВ НА ЭТОТ
 export const categories = [
     { name: 'Все товары', value: 'Все товары' },
-    { name: 'Готовый набор', value: 'Готовый набор', icon: 'ReadySet' },
-    { name: 'Вешалки', value: 'Вешалки', icon: 'Hangers' },
-    { name: 'Зеркало', value: 'Зеркало', icon: 'Mirror' },
-    { name: 'Камин', value: 'Камин', icon: 'Fireplace' },
-    { name: 'Стулья', value: 'Стулья', icon: 'Chairs' },
-    { name: 'Столы', value: 'Столы', icon: 'Tables' },
-    { name: 'Диваны', value: 'Диваны', icon: 'Sofas' },
-    { name: 'Кресла', value: 'Кресла', icon: 'Armchairs' },
-    { name: 'Тумба под ТВ', value: 'Тумба под ТВ', icon: 'TVStand' }, 
+    { name: 'Стулья и табуретки', value: 'Стулья и табуретки', icon: 'Chairs' },
+    { name: 'Шкафы и стеллажи', value: 'Шкафы и стеллажи', icon: 'Storage' },
+    { name: 'Прикроватные тумбы', value: 'Прикроватные тумбы', icon: 'Storage' },
+    { name: 'Тумбы под телевизор', value: 'Тумбы под телевизор', icon: 'TVStand' },
+    { name: 'Рабочие столы', value: 'Рабочие столы', icon: 'Tables' },
+    { name: 'Журнальные столики', value: 'Журнальные столики', icon: 'Tables' },
+    { name: 'Комоды', value: 'Комоды', icon: 'Storage' },
     { name: 'Кровати', value: 'Кровати', icon: 'Beds' },
-    { name: 'Хранение', value: 'Хранение', icon: 'Storage' },
-    { name: 'Освещение', value: 'Освещение', icon: 'Lighting' },
+    { name: 'Идеи комплектов', value: 'Идеи комплектов', icon: 'ReadySet' },
+    { name: 'Столики для прихожей', value: 'Столики для прихожей', icon: 'Tables' },
+    { name: 'Туалетные столики', value: 'Туалетные столики', icon: 'Mirror' },
+    { name: 'Обеденные столы', value: 'Обеденные столы', icon: 'Tables' },
 ];
 
 const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false }) => {
