@@ -61,7 +61,7 @@ const CategoryIcon = ({ type }) => {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
+            className="h-2 w-2"
             viewBox={iconData.viewBox}
         >
             {iconData.content}
@@ -73,16 +73,16 @@ const CategoryIcon = ({ type }) => {
 // ЗАМЕНИТЕ СТАРЫЙ МАССИВ НА ЭТОТ
 export const categories = [
     { name: 'Все товары', value: 'Все товары' },
-    { name: 'Стулья и табуретки', value: 'Стулья и табуретки', icon: 'Chairs' },
+    { name: 'Стулья и табуреты', value: 'Стулья и табуреты', icon: 'Chairs' },
     { name: 'Шкафы и стеллажи', value: 'Шкафы и стеллажи', icon: 'Storage' },
     { name: 'Прикроватные тумбы', value: 'Прикроватные тумбы', icon: 'Storage' },
-    { name: 'Тумбы под телевизор', value: 'Тумбы под телевизор', icon: 'TVStand' },
+    { name: 'ТВ тумбы', value: 'ТВ тумбы', icon: 'TVStand' },
     { name: 'Рабочие столы', value: 'Рабочие столы', icon: 'Tables' },
     { name: 'Журнальные столики', value: 'Журнальные столики', icon: 'Tables' },
     { name: 'Комоды', value: 'Комоды', icon: 'Storage' },
     { name: 'Кровати', value: 'Кровати', icon: 'Beds' },
-    { name: 'Идеи комплектов', value: 'Идеи комплектов', icon: 'ReadySet' },
-    { name: 'Столики для прихожей', value: 'Столики для прихожей', icon: 'Tables' },
+    { name: 'Комплекты', value: 'Комплекты', icon: 'ReadySet' },
+    { name: 'Столы в прихожую', value: 'Столы в прихожую', icon: 'Tables' },
     { name: 'Туалетные столики', value: 'Туалетные столики', icon: 'Mirror' },
     { name: 'Обеденные столы', value: 'Обеденные столы', icon: 'Tables' },
 ];
@@ -108,7 +108,7 @@ const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false 
                         key={category.name}
                         to="/catalog"
                         state={{ selectedCategory: category.value }}
-                        className="flex items-center text-sm font-semibold text-white hover:opacity-80 transition-opacity"
+                        className="flex items-center text-xs font-semibold text-white hover:opacity-80 transition-opacity"
                         style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
                     >
                         {category.icon && <CategoryIcon type={category.icon} />}
