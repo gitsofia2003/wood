@@ -86,7 +86,7 @@ const uploadFileToS3 = async (file) => {
     };
     try {
         await s3Client.send(new PutObjectCommand(params));
-        return `https://${BUCKET_NAME}.s3.${REGION}.storage.selcloud.ru/${fileName}`;
+        return `https://91b337e0-fcd2-4f81-8d15-69b1e0b92c4a.selstorage.ru/${fileName}`;
     } catch (error) {
         console.error("Ошибка при загрузке в S3:", error);
         throw error;
