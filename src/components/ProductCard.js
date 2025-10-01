@@ -89,12 +89,12 @@ const ProductCard = ({ product }) => {
                         <Slider {...sliderSettings} className="w-full h-full">
                             {product.images.map((image, index) => (
                                 <div key={index} className="h-64 flex items-center justify-center">
-                                    <img src={image} alt={`${product.name} - фото ${index + 1}`} className="max-w-full max-h-full object-contain"/>
+                                    <img src={image} alt={`${product.name} - фото ${index + 1}`} className="max-w-full max-h-full object-contain" loading="lazy" />
                                 </div>
                             ))}
                         </Slider>
                     ) : (
-                        <img src={mainImage} alt={product.name} className="max-w-full max-h-full object-contain"/>
+                        <img src={mainImage} alt={product.name} className="max-w-full max-h-full object-contain" loading="lazy" />
                     )}
                 </div>
                 <div className="pt-4 text-center">

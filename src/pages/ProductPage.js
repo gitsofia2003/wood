@@ -136,7 +136,7 @@ const ProductPage = () => {
                                 <Slider {...mainSliderSettings} ref={slider => setMainSlider(slider)}>
                                     {product.images.map((img, index) => (
                                         <div key={index} className="px-2">
-                                            <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto max-h-[40vh] object-contain rounded-lg"/>
+                                            <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-auto max-h-[40vh] object-contain rounded-lg" loading="lazy" />
                                         </div>
                                     ))}
                                 </Slider>
@@ -245,7 +245,7 @@ const ProductPage = () => {
                                 return (
                                     <Link key={p.id} to={`/product/${p.id}`} className="block">
                                         <div className="relative w-36 h-36 rounded-md overflow-hidden bg-white shadow-sm">
-                                            <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover" />
+                                            <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                                             {d > 0 && (
                                                 <span className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">-{d}%</span>
                                             )}
