@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import woodTexture from '../assets/wood-texture.jpg'; 
+import woodTexture from '../assets/wood-texture.webp'; 
 
 const CategoryIcon = ({ type }) => {
     
