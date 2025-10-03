@@ -85,6 +85,7 @@ const CatalogPage = () => {
                     <CategoryFilter
                         activeCategory={activeCategory}
                         setActiveCategory={setActiveCategory}
+                        layout="vertical"
                     />
                 </div>
 
