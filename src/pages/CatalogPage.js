@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import CategoryFilter from '../components/CategoryFilter';
-import MaterialFilter from '../components/MaterialFilter';
+
 import { db } from '../firebase';
 import { collection, getDocs, query, where } from "firebase/firestore";
 
@@ -19,7 +19,7 @@ const CatalogPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     
     const [activeCategory, setActiveCategory] = useState(location.state?.selectedCategory || 'Все товары');
-    const [activeMaterial, setActiveMaterial] = useState('Все материалы');
+    
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -48,47 +48,48 @@ const CatalogPage = () => {
         }
 
         // Шаг 2: Фильтрация по материалу
-        if (activeMaterial !== 'Все материалы') {
-            tempProducts = tempProducts.filter(product => product.material === activeMaterial);
-        }
+        
 
         setFilteredProducts(tempProducts);
-    }, [activeCategory, activeMaterial, products]);
+    }, [activeCategory,  products]);
 
     return (
         <main className="container mx-auto px-6 py-12">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-12">Каталог товаров</h1>
             
-            <div className="mb-2">
-                <CategoryFilter
-                    activeCategory={activeCategory}
-                    setActiveCategory={setActiveCategory}
-                />
-            </div>
+            
+            <div className="flex flex-col md:flex-row items-start gap-8 lg:gap-12">
 
-            <div className="mb-12 flex justify-center">
-                <MaterialFilter 
-                    availableMaterials={availableMaterials}
-                    activeMaterial={activeMaterial}
-                    setActiveMaterial={setActiveMaterial}
-                />
-            </div>
+                {/* --- Левая колонка (основная) - Товары --- */}
+                <div className="w-full md:w-3/4">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-12">Каталог товаров</h1>
+                    {isLoading ? (
+                        <div className="text-center py-10">Загрузка товаров...</div>
+                    ) : (
+                        filteredProducts.length > 0 ? (
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredProducts.map(product => (
+                                    <ProductCard key={product.id} product={product} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-10 text-gray-500">
+                                <p>По вашему запросу товаров не найдено.</p>
+                            </div>
+                        )
+                    )}
+                </div>
 
-            {isLoading ? (
-                <div className="text-center py-10">Загрузка товаров...</div>
-            ) : (
-                filteredProducts.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {filteredProducts.map(product => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-10 text-gray-500">
-                        <p>По вашему запросу товаров не найдено.</p>
-                    </div>
-                )
-            )}
+                {/* --- Правая колонка (сайдбар) - Фильтр --- */}
+                    <div className="w-full md:w-1/4 sticky top-32">
+                    <h3 className="text-lg font-semibold mb-1">Категории</h3>
+                    <CategoryFilter
+                        activeCategory={activeCategory}
+                        setActiveCategory={setActiveCategory}
+                    />
+                </div>
+
+            </div>
+            
         </main>
     );
 };

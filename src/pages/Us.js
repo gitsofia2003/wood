@@ -67,7 +67,7 @@ const UsPage = () => {
                     <div className="flex flex-col md:flex-row items-center gap-12">
                         <div className="md:w-1/2">
                             
-                            <img src="/images/workshop-photo.jpg" alt="Наша мастерская" className="rounded-lg shadow-xl w-full" />
+                            <img src="/images/workshop-photo.webp" alt="Наша мастерская" className="rounded-lg shadow-xl w-full" />
                         </div>
                         <div className="md:w-1/2">
                             <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Наша мастерская</h2>

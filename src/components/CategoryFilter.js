@@ -61,7 +61,7 @@ const CategoryIcon = ({ type }) => {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-2.5 w-2.5"
+            className="h-4 w-4"
             viewBox={iconData.viewBox}
         >
             {iconData.content}
@@ -87,40 +87,45 @@ export const categories = [
     { name: 'Обеденные столы', value: 'Обеденные столы', icon: 'Tables' },
 ];
 
-const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false }) => {
+const CategoryFilter = ({ activeCategory, setActiveCategory, isHomePage = false, navLinks = [], location = {} }) => {
 
-    const displayedCategories = isHomePage
-        ? categories.filter(cat => cat.value !== 'Все товары')
-        : categories;
-
+    // --- Логика для главной страницы (теперь это НАВИГАЦИЯ) ---
     if (isHomePage) {
         return (
             <div 
-                className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 py-4 shadow-lg"
+                className="bg-gray-800"
                 style={{
                     backgroundImage: `url(${woodTexture})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
             >
-                {displayedCategories.map(category => (
-                    <Link
-                        key={category.name}
-                        to="/catalog"
-                        state={{ selectedCategory: category.value }}
-                        className="flex items-center text-xs font-semibold text-white hover:opacity-80 transition-opacity"
-                        style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
-                    >
-                        {category.icon && <CategoryIcon type={category.icon} />}
-                        <span className="ml-2">{category.name}</span>
-                    </Link>
-                ))}
+                {/* ИЗМЕНЕНИЕ ЗДЕСЬ: justify-between заменен на justify-center */}
+                {/* justify-center, чтобы ссылки были по центру */}
+                <div className="container mx-auto px-6 flex flex-wrap justify-center items-center">
+                    {/* Ссылки меню */}
+                    <nav className="flex flex-nowrap items-center gap-x-4 gap-y-2 py-3">
+                        {navLinks.map(link => (
+                            <Link
+                                key={link.name}
+                                to={link.path}
+                                className={`text-sm font-semibold transition-opacity ${
+                                    location.pathname === link.path ? 'text-white' : 'text-gray-300 hover:opacity-80'
+                                }`}
+                                style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+                    </nav>
+                </div>
             </div>
         );
     }
+    const displayedCategories = categories;
 
     return (
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
+        <div className="flex flex-col space-y-2">
             {displayedCategories.map(category => (
                 <button
                     key={category.name}

@@ -3,13 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import Logo from './Logo';
+import CategoryFilter from './CategoryFilter'; // Импортируем наш обновленный компонент
 
 const Header = ({ user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Закрываем меню при переходе на новую страницу
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
@@ -33,45 +33,27 @@ const Header = ({ user }) => {
 
   return (
     <header className="sticky top-0 bg-white bg-opacity-95 backdrop-blur-md shadow-sm z-50">
+      {/* --- ВЕРХНИЙ УРОВЕНЬ ШАПКИ (Лого и контакты) --- */}
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* --- ИЗМЕНЕНИЕ: Заменяем название на "Полиформа" --- */}
           <Link to="/" className="flex items-center gap-x-3">
-              {/* Графическая часть логотипа, делаем ее поменьше */}
               <Logo width="50" /> 
-              
-              {/* Текстовая часть логотипа */}
               <span className="text-2xl font-bold text-gray-800 tracking-wider">
                   Elvora
               </span>
           </Link>
 
-          {/* --- Десктопная навигация --- */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navLinks.map(link => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className={`${location.pathname === link.path ? 'text-gray-800 font-semibold' : 'text-gray-500'} hover:text-gray-800 transition duration-300`}
-              >
-                {link.name}
-              </Link>
-            ))}
-            {user && location.pathname === '/admin' && (
-                 <button onClick={handleLogout} className="text-red-500 hover:text-red-700 font-semibold">Выйти</button>
-            )}
-          </nav>
-
-          {location.pathname !== '/admin' && (
-            <div className="hidden md:block">
+          {/* Контакты и кнопка "Оставить заявку" на десктопе */}
+          <div className="hidden md:flex items-center gap-6">
+              <div className="text-right">
                 <a href="tel:+78123364246" className="font-bold text-lg text-gray-800">+7 (812) 336-42-46</a>
-                <p className="text-sm text-gray-500 cursor-pointer">Оставить заявку</p>
-            </div>
-          )}
+                {/* <p className="text-sm text-gray-500">г. Санкт-Петербург</p> */}
+              </div>
+              
+          </div>
 
-          {/* --- Кнопка мобильного меню (бургер) --- */}
+          {/* Кнопка мобильного меню (бургер) */}
           <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {/* Иконка меняется в зависимости от состояния меню (крестик/бургер) */}
             {isMenuOpen ? (
               <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             ) : (
@@ -81,31 +63,31 @@ const Header = ({ user }) => {
         </div>
       </div>
 
-      {/* --- ИЗМЕНЕНИЕ: ЗАПОЛНЕННОЕ МОБИЛЬНОЕ МЕНЮ --- */}
-      {/* Меню появляется с плавной анимацией */}
+      {/* --- НИЖНИЙ УРОВЕНЬ ШАПКИ (НАВИГАЦИЯ) --- */}
+      {/* На десктопе всегда виден, на мобильных скрыт */}
+      <div className="hidden md:block">
+        {/* Отображаем, только если мы НЕ в админ-панели */}
+        {!location.pathname.startsWith('/admin') && (
+            <CategoryFilter isHomePage={true} navLinks={navLinks} location={location} />
+        )}
+      </div>
+
+      {/* --- ВЫЕЗЖАЮЩЕЕ МОБИЛЬНОЕ МЕНЮ --- */}
+      {/* Появляется только на мобильных по клику на бургер */}
       <div className={`transition-all duration-300 ease-in-out overflow-hidden md:hidden ${isMenuOpen ? 'max-h-screen' : 'max-h-0'}`}>
         <div className="px-6 pb-6 pt-2 border-t border-gray-200">
-          <nav className="flex flex-col space-y-4">
-            {navLinks.map(link => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className={`text-lg ${location.pathname === link.path ? 'text-gray-900 font-bold' : 'text-gray-600'} hover:text-gray-900`}
-              >
-                {link.name}
-              </Link>
-            ))}
-             {user && location.pathname === '/admin' && (
-                 <button onClick={handleLogout} className="text-red-500 hover:text-red-700 text-lg text-left">Выйти</button>
-            )}
-          </nav>
-          
-          {location.pathname !== '/admin' && (
-            <div className="mt-6 pt-4 border-t border-gray-200">
-                <a href="tel:+78123364246" className="font-bold text-lg text-gray-800">+7 (812) 336-42-46</a>
-                <p className="text-sm text-gray-500 cursor-pointer">Заказать звонок</p>
+            {/* В мобильном меню просто выводим ссылки списком */}
+            <nav className="flex flex-col space-y-4 mt-4">
+              {navLinks.map(link => (
+                <Link key={link.name} to={link.path} className={`text-lg ${location.pathname === link.path ? 'font-bold' : ''}`}>
+                  {link.name}
+                </Link>
+              ))}
+            </nav>
+            <div className="mt-6 pt-4 border-t">
+              <a href="tel:+78123364246" className="font-bold text-lg">+7 (812) 336-42-46</a>
+              <p className="text-sm text-gray-500">г. Санкт-Петербург</p>
             </div>
-          )}
         </div>
       </div>
     </header>

@@ -7,7 +7,7 @@ const galleryData = {
     leftColumn: [
         {
             id: 1,
-            imageUrl: '/images/gallery-1.jpg',
+            imageUrl: '/images/gallery-1.webp',
             heightClass: 'h-[32rem]', // <-- ВЫСОТА ЭТОЙ РАМКИ
             hotspots: [
                 { id: '1a', position: { top: '55%', left: '50%' }, product: { name: 'Диван "Осло"', size: '220x95x80 см', price: '89 900 ₽' }}
@@ -15,7 +15,7 @@ const galleryData = {
         },
         {
             id: 2,
-            imageUrl: '/images/gallery-2.jpg',
+            imageUrl: '/images/gallery-2.webp',
             heightClass: 'h-[24rem]', // <-- ВЫСОТА ЭТОЙ РАМКИ
             hotspots: [
                 { 
@@ -27,7 +27,7 @@ const galleryData = {
     middleColumn: [
         {
             id: 3,
-            imageUrl: '/images/gallery-3.jpg',
+            imageUrl: '/images/gallery-3.webp',
             heightClass: 'h-[28rem]', // <-- ВЫСОТА ЭТОЙ РАМКИ
             hotspots: [
                 { id: '3a', position: { top: '60%', left: '30%' }, product: { name: 'Столик "Гекса"', size: '50x50x45 см', price: '8 900 ₽' }}
@@ -35,7 +35,7 @@ const galleryData = {
         },
         {
             id: 4,
-            imageUrl: '/images/gallery-4.jpg',
+            imageUrl: '/images/gallery-4.webp',
             heightClass: 'h-[36rem]', // <-- ВЫСОТА ЭТОЙ РАМКИ
             hotspots: [
                 { id: '4a', position: { top: '50%', left: '65%' }, product: { name: 'Комод "Берген"', size: '160x45x80 см', price: '54 900 ₽' }}
@@ -45,7 +45,7 @@ const galleryData = {
     rightColumn: [
         {
             id: 5,
-            imageUrl: '/images/gallery-5.jpg',
+            imageUrl: '/images/gallery-5.webp',
             heightClass: 'h-[24rem]', // <-- ВЫСОТА ЭТОЙ РАМКИ
             hotspots: [
                 { id: '5a', position: { top: '50%', left: '35%' }, product: { name: 'Кровать "Лофт"', size: '180x200 см', price: '72 000 ₽' }}
@@ -53,7 +53,7 @@ const galleryData = {
         },
         {
             id: 6,
-            imageUrl: '/images/gallery-6.jpg',
+            imageUrl: '/images/gallery-6.webp',
             heightClass: 'h-[32rem]', // <-- ВЫСОТА ЭТОЙ РАМКИ
             hotspots: [
                 { id: '6a', position: { top: '70%', left: '50%' }, product: { name: 'Стул "Сканди"', size: '45x50x85 см', price: '6 500 ₽' }}

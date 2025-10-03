@@ -10,7 +10,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 import CategoryFilter, { categories } from '../components/CategoryFilter';
-import MaterialFilter from '../components/MaterialFilter';
+
 
 // --- Вспомогательные компоненты и функции ---
 
@@ -32,7 +32,7 @@ function PrevArrow(props) {
     );
 }
 
-const availableMaterials = [ { name: "Вишня", color: "#6D282B" }, { name: "Бук", color: "#DAB88F" }, { name: "Сандал", color: "#B07953" } ];
+
 const formatNumberWithSpaces = (value) => { if (!value) return ''; const n = value.replace(/[^0-9]/g, ''); return n.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); };
 const handleFirestoreError = (error) => { if (error.code === 'permission-denied') { alert("Доступ запрещен."); } else { console.error("Ошибка Firestore: ", error); alert("Произошла ошибка."); } };
 
@@ -95,12 +95,12 @@ const uploadFileToS3 = async (file) => {
 
 const AdminPage = () => {
     const [products, setProducts] = useState([]);
-    const [newProduct, setNewProduct] = useState({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
+    const [newProduct, setNewProduct] = useState({ name: '', price: '', originalPrice: '', category: '', dimensions: '', description: '' });
     const [discount, setDiscount] = useState(0);
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
     const [activeCategory, setActiveCategory] = useState('Все товары');
-    const [activeMaterial, setActiveMaterial] = useState('Все материалы');
+    
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
@@ -166,14 +166,13 @@ const AdminPage = () => {
     const handleEditClick = (product) => {
         setEditingProduct(product);
         setNewProduct({
-            name: product.name || '',
-            price: formatNumberWithSpaces(product.price ? String(product.price).replace(/[^0-9]/g, '') : ''),
-            originalPrice: formatNumberWithSpaces(product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : ''),
-            category: product.category || '',
-            dimensions: product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '',
-            material: product.material || '',
-            description: product.description || ''
-        });
+             name: product.name || '',
+             price: formatNumberWithSpaces(product.price ? String(product.price).replace(/[^0-9]/g, '') : ''),
+             originalPrice: formatNumberWithSpaces(product.originalPrice ? String(product.originalPrice).replace(/[^0-9]/g, '') : ''),
+             category: product.category || '',
+             dimensions: product.dimensions ? String(product.dimensions).replace(/\s*см/i, '') : '',
+             description: product.description || ''
+         });
         setImagePreviews(product.images || []);
         setImageFiles([]);
         setIsDraft(product.status === 'draft');
@@ -183,7 +182,7 @@ const AdminPage = () => {
 
     const cancelEdit = () => {
         setEditingProduct(null);
-        setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', material: '', description: '' });
+        setNewProduct({ name: '', price: '', originalPrice: '', category: '', dimensions: '', description: '' });
         setImageFiles([]);
         setImagePreviews([]);
         setDiscount(0);
@@ -210,17 +209,17 @@ const AdminPage = () => {
             }
             setUploadProgress('Сохранение данных...');
             const productData = {
-                name: newProduct.name || '', // Имя остается, но может быть пустым
-                price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
-                originalPrice: newProduct.originalPrice ? formatNumberWithSpaces(newProduct.originalPrice) + ' ₽' : '',
-                category: newProduct.category,
-                dimensions: newProduct.dimensions ? `${newProduct.dimensions.trim()} см` : '',
-                material: newProduct.material || '',
-                description: newProduct.description || '',
-                images: imageUrls,
-                status: isDraft ? 'draft' : 'published',
-                originalFilename: imageFiles.length > 0 ? imageFiles[0].name : (editingProduct?.originalFilename || '')
-            };
+                 name: newProduct.name || '',
+                 price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
+                 originalPrice: newProduct.originalPrice ? formatNumberWithSpaces(newProduct.originalPrice) + ' ₽' : '',
+                 category: newProduct.category,
+                 dimensions: newProduct.dimensions ? `${newProduct.dimensions.trim()} см` : '',
+                 
+                 description: newProduct.description || '',
+                 images: imageUrls,
+                 status: isDraft ? 'draft' : 'published',
+                 originalFilename: imageFiles.length > 0 ? imageFiles[0].name : (editingProduct?.originalFilename || '')
+             };
             if (editingProduct) {
                 await updateDoc(doc(db, "products", editingProduct.id), productData);
             } else {
@@ -265,12 +264,11 @@ const AdminPage = () => {
                 setUploadProgress(`Загрузка ${file.name}...`);
                 const imageUrl = await uploadFileToS3(file);
                 const productData = {
-                    name: newProduct.name ? `${newProduct.name} - ${file.name.replace(/\.[^/.]+$/, "")}` : '', // Имя по умолчанию пустое
+                    name: newProduct.name ? `${newProduct.name} - ${file.name.replace(/\.[^/.]+$/, "")}` : '',
                     price: newProduct.price ? formatNumberWithSpaces(newProduct.price) + ' ₽' : 'Цена по запросу',
                     category: newProduct.category,
                     description: newProduct.description || '',
                     dimensions: newProduct.dimensions || 'Размеры по запросу',
-                    material: newProduct.material || '',
                     images: [imageUrl],
                     status: isBatchPublish ? 'published' : 'draft',
                     originalFilename: file.name
@@ -340,7 +338,7 @@ const AdminPage = () => {
         setIsLoading(false);
     };
 
-    const publishedProducts = products.filter(p => p.status !== 'draft' && (activeCategory === 'Все товары' || p.category === activeCategory) && (activeMaterial === 'Все материалы' || p.material === activeMaterial));
+    const publishedProducts = products.filter(p => p.status !== 'draft' && (activeCategory === 'Все товары' || p.category === activeCategory));
     const draftProducts = products.filter(p => p.status === 'draft');
     const sliderSettings = { dots: true, infinite: false, speed: 500, slidesToShow: 1, slidesToScroll: 1, nextArrow: <NextArrow />, prevArrow: <PrevArrow /> };
 
@@ -375,7 +373,7 @@ const AdminPage = () => {
                                 <select name="category" value={newProduct.category} onChange={handleInputChange} className="p-2 border rounded w-1/2"><option value="">Категория*</option>{categories.filter(c => c.value !== 'Все товары').map(cat => ( <option key={cat.value} value={cat.value}>{cat.name}</option> ))}</select>
                                 <input name="dimensions" value={newProduct.dimensions} onChange={handleInputChange} placeholder="Размеры" className="p-2 border rounded w-1/2" />
                             </div>
-                            <select name="material" value={newProduct.material} onChange={handleInputChange} className="p-2 border rounded w-full"><option value="">Материал</option>{availableMaterials.map(m => ( <option key={m.name} value={m.name}>{m.name}</option> ))}</select>
+                            
                             <textarea name="description" value={newProduct.description} onChange={handleInputChange} placeholder="Описание" rows="6" className="p-2 border rounded w-full"></textarea>
                         </div>
                     </div>
@@ -401,7 +399,6 @@ const AdminPage = () => {
                     <button onClick={handleCategorySync} className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700">Синхронизировать категории</button>
                 </div>
                 <div className="mb-6"><CategoryFilter activeCategory={activeCategory} setActiveCategory={setActiveCategory} /></div>
-                <div className="mb-6 flex justify-center"><MaterialFilter availableMaterials={availableMaterials} activeMaterial={activeMaterial} setActiveMaterial={setActiveMaterial} /></div>
                 {isLoading ? <p>Загрузка...</p> : (
                     <div className="space-y-8">
                         <div>

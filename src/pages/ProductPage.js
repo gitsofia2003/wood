@@ -7,6 +7,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import CallbackModal from '../components/CallbackModal';
 import CategoryFilter from '../components/CategoryFilter';
+import AvailableMaterials from '../components/AvailableMaterials';
 
 // ИЗМЕНЕНИЕ: Карта цветов COLOR_MAP больше не нужна, так как мы используем материалы.
 // Мы ее полностью удаляем.
@@ -96,7 +97,7 @@ const ProductPage = () => {
         <>
             <div className="hidden lg:block bg-sand border-b border-gray-200">
                 
-                    <CategoryFilter isHomePage={true} />
+                    
                 
             </div>
 
@@ -117,7 +118,7 @@ const ProductPage = () => {
                 </div>
                 
                 <div className="flex flex-col lg:flex-row lg:items-center gap-12">
-                    <div className="lg:w-3/4">
+                    <div className="lg:w-3/4 overflow-hidden">
                         {/* ИЗМЕНЕНИЕ: Вот та самая обертка.
                         - Классы lg:max-w-4xl и lg:mx-auto сработают ТОЛЬКО на экранах 'lg' и больше.
                         - На мобильных устройствах эти классы будут проигнорированы, и контейнер останется 100% ширины.
@@ -182,6 +183,7 @@ const ProductPage = () => {
                                 <p className="text-gray-600 whitespace-pre-wrap">{product.description}</p>
                             </div>
                         )}
+                        <AvailableMaterials/>
                         <button 
                             onClick={() => setIsModalOpen(true)}
                             className="mt-6 w-full py-4 px-8 bg-gray-800 text-white font-semibold rounded-md shadow-md hover:bg-gray-700 transition duration-300"
@@ -223,6 +225,7 @@ const ProductPage = () => {
                                 <p className="text-gray-600 whitespace-pre-wrap">{product.description}</p>
                             </div>
                         )}
+                        <AvailableMaterials/>
                         <button 
                             onClick={() => setIsModalOpen(true)}
                             className="mt-8 w-full py-4 px-8 bg-gray-800 text-white font-semibold rounded-md shadow-md hover:bg-gray-700 transition duration-300"

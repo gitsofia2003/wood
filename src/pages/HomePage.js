@@ -33,9 +33,56 @@ function PrevArrow(props) {
 }
 
 const mainSlidesData = [
-    { type: 'simple', id: 'banner1', bgColor: 'bg-blue-100', title: 'Мебель на отлично', subtitle: 'Всё для учёбы и работы', image: '/images/banner-1-bg.webp' },
-    { type: 'nested-horizontal', id: 'banner2', bgColor: 'bg-orange-100', title: 'Уют в каждой комнате', subtitle: 'Листайте, чтобы увидеть больше', nestedSlides: [{ id: 'b2s1', image: '/images/nested-1.webp' }, { id: 'b2s2', image: '/images/nested-2.webp' }, { id: 'b2s3', image: '/images/nested-3.webp' }] },
-    { type: 'nested-vertical', id: 'banner3', bgColor: 'bg-teal-100', title: 'Новая коллекция', subtitle: 'Вертикальный взгляд на стиль', nestedSlides: [{ id: 'b3s1', image: '/images/nested-vertical-1.webp' }, { id: 'b3s2', image: '/images/nested-vertical-2.webp' }, { id: 'b3s3', image: '/images/nested-vertical-3.webp' }] }
+    { 
+        type: 'simple', 
+        id: 'banner1', 
+        bgColor: 'bg-blue-100', 
+        title: 'Мебель на отлично', 
+        subtitle: 'Всё для учёбы и работы', 
+        image: '/images/banner-1-bg.webp' 
+    },
+    {
+        type: 'nested-horizontal', 
+        id: 'banner2', 
+        bgColor: 'bg-orange-100', 
+        title: 'Уют в каждой комнате', 
+        subtitle: 'Листайте, чтобы увидеть больше', 
+        nestedSlides: [
+            { 
+                id: 'b2s1', 
+                image: '/images/nested-1.webp' 
+            }, 
+            { 
+                id: 'b2s2', 
+                image: '/images/nested-2.webp' 
+            }, 
+            { 
+                id: 'b2s3', 
+                image: '/images/nested-3.webp' 
+            }
+        ] 
+    },
+    { 
+        type: 'nested-vertical', 
+        id: 'banner3', 
+        bgColor: 'bg-teal-100', 
+        title: 'Новая коллекция', 
+        subtitle: 'Вертикальный взгляд на стиль', 
+        nestedSlides: [
+            { 
+                id: 'b3s1', 
+                image: '/images/nested-vertical-1.webp' 
+            }, 
+            { 
+                id: 'b3s2', 
+                image: '/images/nested-vertical-2.webp' 
+            }, 
+            { 
+                id: 'b3s3', 
+                image: '/images/nested-vertical-3.webp' 
+            }
+        ]
+    }
 ];
 
 const useIsMobile = (breakpoint = 768) => {
@@ -310,7 +357,7 @@ const HomePage = () => {
         return (
             <>
                 <div className="bg-sand border-b border-gray-200">          
-                    <CategoryFilter isHomePage={true} />    
+                       
                 </div>
                 <section className="hero-slider-complex relative">
                     <Slider ref={mainSliderRef} {...mainSliderSettings}>
