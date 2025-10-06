@@ -53,6 +53,10 @@ const CategoryIcon = ({ type }) => {
             viewBox: "0 0 24 24",
             content: <path fill="currentColor" d="M18 2a2 2 0 0 1 1.995 1.85L20 4v16a2 2 0 0 1-1.85 1.995L18 22H6a2 2 0 0 1-1.995-1.85L4 20V4a2 2 0 0 1 1.85-1.995L6 2zm-7 2H6v16h5zm7 0h-5v16h5zm-9 7a1 1 0 0 1 .117 1.993L9 13H8a1 1 0 0 1-.117-1.993L8 11zm7 0a1 1 0 1 1 0 2h-1a1 1 0 1 1 0-2z" />
         },
+        Dresser: {
+            viewBox: "0 0 24 24",
+            content: <path fill="currentColor" d="M4 3c-1.1 0-2 .9-2 2v13a2 2 0 0 0 2 2v1h2v-1h12v1h2v-1c1.11 0 2-.89 2-2V5a2 2 0 0 0-2-2zm0 2h16v3H4zm6 1v1h4V6zm-6 4h16v3H4zm6 1v1h4v-1zm-6 4h16v3H4zm6 1v1h4v-1z"/>
+        },
     };
 
     const iconData = icons[type];
@@ -78,7 +82,7 @@ export const categories = [
     { name: 'Комоды', value: 'Комоды', icon: 'Storage' },
     { name: 'Кровати', value: 'Кровати', icon: 'Beds' },
     { name: 'Обеденные столы', value: 'Обеденные столы', icon: 'Tables' },
-    { name: 'Прикроватные тумбы', value: 'Прикроватные тумбы', icon: 'Storage' },
+    { name: 'Прикроватные тумбы', value: 'Прикроватные тумбы', icon: 'Dresser' },
     { name: 'Рабочие столы', value: 'Рабочие столы', icon: 'Tables' },
     { name: 'Столики для прихожей', value: 'Столики для прихожей', icon: 'Tables' },
     { name: 'Стулья и табуретки', value: 'Стулья и табуретки', icon: 'Chairs' },
