@@ -15,8 +15,8 @@ const Header = ({ user }) => {
   }, [location.pathname]);
 
   const navLinks = [
-    { name: 'Главная', path: '/' },
     { name: 'Каталог', path: '/catalog' },
+    { name: 'Главная', path: '/' },
     { name: 'Гарантия', path: '/warranty' },
     { name: 'О нас', path: '/about' },
     { name: 'Контакты и адреса', path: '/contact' },
@@ -37,10 +37,7 @@ const Header = ({ user }) => {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-x-3">
-              <Logo width="50" /> 
-              <span className="text-2xl font-bold text-gray-800 tracking-wider">
-                  Elvora
-              </span>
+              <Logo width="130" /> 
           </Link>
 
           {/* Контакты и кнопка "Оставить заявку" на десктопе */}

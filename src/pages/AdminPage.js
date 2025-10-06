@@ -320,10 +320,22 @@ const AdminPage = () => {
     };
 
     const handleCategorySync = async () => {
-        if (!window.confirm("Обновить категории у старых товаров?")) return;
-        setIsLoading(true);
-        const nameMapping = { "Стулья и табуретки": "Стулья и табуреты", "Туалетные женские столики": "Туалетные столики", "Идеи комплектов": "Комплекты", "Тумбы под телевизор": "ТВ тумбы", "Столики для прихожей": "Столы в прихожую" };
-        const snapshot = await getDocs(collection(db, "products"));
+    if (!window.confirm("Обновить категории у старых товаров?")) return;
+    setIsLoading(true);
+    const nameMapping = { 
+        "Стулья и табуреты": "Стулья и табуретки", 
+        "Туалетные столики": "Туалетные женские столики", 
+        "Комплекты": "Идеи комплектов", 
+        "ТВ тумбы": "Тумбы под телевизор", 
+        "Столы в прихожую": "Столики для прихожей",
+        // Обратное преобразование для восстановления товаров
+        "Стулья и табуретки": "Стулья и табуреты",
+        "Туалетные женские столики": "Туалетные столики", 
+        "Идеи комплектов": "Комплекты",
+        "Тумбы под телевизор": "ТВ тумбы",
+        "Столики для прихожей": "Столы в прихожую"
+    };
+    const snapshot = await getDocs(collection(db, "products"));
         const batch = writeBatch(db);
         let updatedCount = 0;
         snapshot.docs.forEach(document => {
@@ -333,7 +345,12 @@ const AdminPage = () => {
                 updatedCount++;
             }
         });
-        if (updatedCount > 0) { await batch.commit(); alert(`Обновлено ${updatedCount} товаров.`); } else { alert("Товаров для обновления не найдено."); }
+        if (updatedCount > 0) { 
+            await batch.commit(); 
+            alert(`Обновлено ${updatedCount} товаров. Категории восстановлены.`); 
+        } else { 
+            alert("Товаров для обновления не найдено."); 
+        }
         fetchProducts();
         setIsLoading(false);
     };

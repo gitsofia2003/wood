@@ -17,7 +17,7 @@ const SocialIcon = ({ href, className = '', children }) => (
 const Footer = () => (
     <footer className="bg-white text-gray-500 border-t border-gray-200">
         {/* --- ИЗМЕНЕНИЕ ЗДЕСЬ: Уменьшаем вертикальные отступы py-12 -> py-8 --- */}
-        <div className="container mx-auto px-6 py-8">
+        <div className=" px-6 py-8">
             {/* --- ИЗМЕНЕНИЕ ЗДЕСЬ: Уменьшаем расстояние между колонками gap-8 -> gap-6 --- */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:text-left">
                 
@@ -25,11 +25,7 @@ const Footer = () => (
                 <div className="col-span-2 lg:col-span-1">
                     <a href="#!" className="flex items-center gap-x-3">
                         {/* Графическая часть, делаем ее маленькой */}
-                        <Logo width="40" />
-                        {/* Текстовая часть */}
-                        <span className="text-xl font-bold text-gray-800 tracking-wider">
-                            Elvora
-                        </span>
+                        <Logo width="120" />
                     </a>
                     <p className="mt-4 text-sm">© Loft Wood Studio 2019-2025</p>
                     {/* ВОТ ЭТА ОБЕРТКА И ЕЕ КЛАССЫ РЕШАЮТ ПРОБЛЕМУ */}

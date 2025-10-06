@@ -54,14 +54,28 @@ const CatalogPage = () => {
     }, [activeCategory,  products]);
 
     return (
-        <main className="container mx-auto px-6 py-12">
+        <main className=" px-6 py-12">
             
             
             <div className="flex flex-col md:flex-row items-start gap-8 lg:gap-12">
 
-                {/* --- Левая колонка (основная) - Товары --- */}
-                <div className="w-full md:w-3/4">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-12">Каталог товаров</h1>
+                {/* --- СНАЧАЛА ставим колонку с ФИЛЬТРОМ --- */}
+                <div
+                    className="w-full md:w-1/5 sticky top-32 h-[calc(100vh-8rem)] overflow-y-auto overscroll-contain"
+                    style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+                >
+                     <h3 className="text-lg font-semibold mb-4">Категории</h3>
+                     <hr className="border-gray-200 mb-4" />
+                     <CategoryFilter
+                         activeCategory={activeCategory}
+                         setActiveCategory={setActiveCategory}
+                         layout="vertical"
+                     />
+                 </div>
+
+                {/* --- ПОТОМ ставим колонку с ТОВАРАМИ --- */}
+                <div className="w-full md:w-4/5 overflow-hidden">
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center md:text-left mb-8">Каталог товаров</h1>
                     {isLoading ? (
                         <div className="text-center py-10">Загрузка товаров...</div>
                     ) : (
@@ -77,16 +91,6 @@ const CatalogPage = () => {
                             </div>
                         )
                     )}
-                </div>
-
-                {/* --- Правая колонка (сайдбар) - Фильтр --- */}
-                    <div className="w-full md:w-1/4 sticky top-32">
-                    <h3 className="text-lg font-semibold mb-1">Категории</h3>
-                    <CategoryFilter
-                        activeCategory={activeCategory}
-                        setActiveCategory={setActiveCategory}
-                        layout="vertical"
-                    />
                 </div>
 
             </div>
