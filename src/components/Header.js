@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import Logo from './Logo';
-import CategoryFilter from './CategoryFilter'; // Импортируем наш обновленный компонент
+import CategoryFilter from './CategoryFilter';
+import ContactFormSection from './email';
 
 const Header = ({ user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,8 +44,10 @@ const Header = ({ user }) => {
           {/* Контакты и кнопка "Оставить заявку" на десктопе */}
           <div className="hidden md:flex items-center gap-6">
               <div className="text-right">
-                <a href="tel:+78123364246" className="font-bold text-lg text-gray-800">+7 (812) 336-42-46</a>
-                {/* <p className="text-sm text-gray-500">г. Санкт-Петербург</p> */}
+                <a href="tel:+78123364246" className="font-bold text-lg text-gray-800 block">+7 (812) 336-42-46</a>
+                <Link to="/#contact-form" className="text-sm text-gray-500 cursor-pointer">
+                  Заказать звонок
+              </Link>
               </div>
               
           </div>
@@ -83,7 +86,7 @@ const Header = ({ user }) => {
             </nav>
             <div className="mt-6 pt-4 border-t">
               <a href="tel:+78123364246" className="font-bold text-lg">+7 (812) 336-42-46</a>
-              <p className="text-sm text-gray-500">г. Санкт-Петербург</p>
+              <a href="#contact-form" className="text-sm text-gray-500 cursor-pointer">Заявка на звонок</a>
             </div>
         </div>
       </div>

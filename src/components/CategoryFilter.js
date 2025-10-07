@@ -102,17 +102,17 @@ const CategoryIcon = ({ type }) => {
 // ЗАМЕНИТЕ СТАРЫЙ МАССИВ НА ЭТОТ
 export const categories = [
     { name: 'Все товары', value: 'Все товары' },
-    { name: 'Журнальные столики', value: 'Журнальные столики', icon: 'DeskSitAlt' },
-    { name: 'Идеи комплектов', value: 'Идеи комплектов', icon: 'ReadySet' },
-    { name: 'Комоды', value: 'Комоды', icon: 'DresserOutline' },
-    { name: 'Кровати', value: 'Кровати', icon: 'Beds' },
-    { name: 'Обеденные столы', value: 'Обеденные столы', icon: 'Desk' },
-    { name: 'Прикроватные тумбы', value: 'Прикроватные тумбы', icon: 'Dresser' },
-    { name: 'Рабочие столы', value: 'Рабочие столы', icon: 'Desk16Regular' },
-    { name: 'Столики для прихожей', value: 'Столики для прихожей', icon: 'DeskDuotone' },
     { name: 'Стулья и табуретки', value: 'Стулья и табуретки', icon: 'Chairs' },
-    { name: 'Туалетные женские столики', value: 'Туалетные женские столики', icon: 'Mirror' },
     { name: 'Тумбы под телевизор', value: 'Тумбы под телевизор', icon: 'TVStand' },
+    { name: 'Рабочие столы', value: 'Рабочие столы', icon: 'Desk16Regular' },
+    { name: 'Обеденные столы', value: 'Обеденные столы', icon: 'Desk' },
+    { name: 'Журнальные столики', value: 'Журнальные столики', icon: 'DeskSitAlt' },
+    { name: 'Прикроватные тумбы', value: 'Прикроватные тумбы', icon: 'Dresser' },
+    { name: 'Кровати', value: 'Кровати', icon: 'Beds' },
+    { name: 'Комоды', value: 'Комоды', icon: 'DresserOutline' },
+    { name: 'Женские столики', value: 'Туалетные женские столики', icon: 'Mirror' },
+    { name: 'Столики для прихожей', value: 'Столики для прихожей', icon: 'DeskDuotone' },
+    { name: 'Идеи комплектов', value: 'Идеи комплектов', icon: 'ReadySet' },
     { name: 'Шкафы и стеллажи', value: 'Шкафы и стеллажи', icon: 'Storage' },
 ];
 

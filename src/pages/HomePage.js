@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Slider from 'react-slick';
 import ContactFormSection from '../components/email';
 import AboutPage from '../components/about';
@@ -184,6 +184,19 @@ const HomePage = () => {
 
         return () => clearTimeout(mainMobileTimerId); // Очистка главного мобильного таймера
     }, [mobileCurrentBannerIndex, isMobile]); // Зависит от индекса активного мобильного баннера и режима
+
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.hash === '#contact-form') {
+            const element = document.getElementById('contact-form');
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+                // После прокрутки убираем якорь из URL, чтобы он не срабатывал при обновлении
+                window.history.replaceState(null, '', ' ');
+            }
+        }
+    }, [location]);
 
     const mainSliderSettings = {
         dots: true,

@@ -318,41 +318,64 @@ const AdminPage = () => {
         (listType === 'published' ? setSelectedPublished : setSelectedDrafts)([]);
         fetchProducts();
     };
+    const [syncData, setSyncData] = useState(null);
 
     const handleCategorySync = async () => {
-    if (!window.confirm("Обновить категории у старых товаров?")) return;
-    setIsLoading(true);
-    const nameMapping = { 
-        "Стулья и табуреты": "Стулья и табуретки", 
-        "Туалетные столики": "Туалетные женские столики", 
-        "Комплекты": "Идеи комплектов", 
-        "ТВ тумбы": "Тумбы под телевизор", 
-        "Столы в прихожую": "Столики для прихожей",
-        // Обратное преобразование для восстановления товаров
-        "Стулья и табуретки": "Стулья и табуреты",
-        "Туалетные женские столики": "Туалетные столики", 
-        "Идеи комплектов": "Комплекты",
-        "Тумбы под телевизор": "ТВ тумбы",
-        "Столики для прихожей": "Столы в прихожую"
+        setIsLoading(true);
+        alert("Идет поиск старых категорий...");
+
+        try {
+            const productsRef = collection(db, "products");
+            const snapshot = await getDocs(productsRef);
+            
+            const allDbCategories = new Set(snapshot.docs.map(doc => doc.data().category).filter(Boolean));
+            const validCategoryValues = new Set(categories.map(c => c.value));
+            
+            const oldCategories = [...allDbCategories].filter(cat => !validCategoryValues.has(cat));
+
+            if (oldCategories.length > 0) {
+                setSyncData({ oldCategories, allDocs: snapshot.docs });
+            } else {
+                alert("Старых категорий для обновления не найдено. Все актуально!");
+            }
+        } catch (error) {
+            console.error("Ошибка при поиске категорий:", error);
+            alert("Произошла ошибка при поиске старых категорий.");
+        } finally {
+            setIsLoading(false);
+        }
     };
-    const snapshot = await getDocs(collection(db, "products"));
+
+    const executeSync = async (mapping) => {
+        if (Object.keys(mapping).length === 0) {
+            alert("Вы не выбрали ни одного сопоставления.");
+            return;
+        }
+
+        setIsLoading(true);
+        const { allDocs } = syncData;
         const batch = writeBatch(db);
         let updatedCount = 0;
-        snapshot.docs.forEach(document => {
-            const cat = document.data().category;
-            if (nameMapping[cat] && cat !== nameMapping[cat]) {
-                batch.update(document.ref, { category: nameMapping[cat] });
+
+        allDocs.forEach(document => {
+            const currentCategory = document.data().category;
+            const newCategory = mapping[currentCategory];
+            if (newCategory) {
+                batch.update(document.ref, { category: newCategory });
                 updatedCount++;
             }
         });
-        if (updatedCount > 0) { 
-            await batch.commit(); 
-            alert(`Обновлено ${updatedCount} товаров. Категории восстановлены.`); 
-        } else { 
-            alert("Товаров для обновления не найдено."); 
+
+        try {
+            await batch.commit();
+            alert(`Синхронизация завершена! Обновлено ${updatedCount} товаров.`);
+        } catch (error) {
+            handleFirestoreError(error);
+        } finally {
+            setIsLoading(false);
+            setSyncData(null);
+            fetchProducts();
         }
-        fetchProducts();
-        setIsLoading(false);
     };
 
     const publishedProducts = products.filter(p => p.status !== 'draft' && (activeCategory === 'Все товары' || p.category === activeCategory));
