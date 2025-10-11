@@ -93,6 +93,45 @@ const uploadFileToS3 = async (file) => {
     }
 };
 
+const SyncModal = ({ oldCategories, newCategories, onSync, onCancel }) => {
+    const [mapping, setMapping] = useState({});
+
+    const handleSelectChange = (oldCat, newCat) => {
+        setMapping(prev => ({ ...prev, [oldCat]: newCat }));
+    };
+
+    const validNewCategories = newCategories.filter(c => c.value !== 'Все товары').map(c => c.value);
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl max-w-2xl w-full">
+                <h3 className="text-xl font-bold mb-4">Синхронизация категорий</h3>
+                <p className="mb-6 text-gray-600">Мы нашли старые/неправильные названия категорий. Выберите, на какие новые названия их нужно заменить.</p>
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                    {oldCategories.map(oldCat => (
+                        <div key={oldCat} className="grid grid-cols-2 gap-4 items-center">
+                            <span className="font-semibold text-gray-700">{oldCat || "[Пустая категория]"}</span>
+                            <select 
+                                onChange={(e) => handleSelectChange(oldCat, e.target.value)} 
+                                className="p-2 border rounded-md"
+                            >
+                                <option value="">Выберите новую категорию...</option>
+                                {validNewCategories.map(newCat => (
+                                    <option key={newCat} value={newCat}>{newCat}</option>
+                                ))}
+                            </select>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex justify-end gap-4 mt-6">
+                    <button onClick={onCancel} className="py-2 px-4 bg-gray-200 rounded-md">Отмена</button>
+                    <button onClick={() => onSync(mapping)} className="py-2 px-4 bg-blue-600 text-white rounded-md">Синхронизировать</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const AdminPage = () => {
     const [products, setProducts] = useState([]);
     const [newProduct, setNewProduct] = useState({ name: '', price: '', originalPrice: '', category: '', dimensions: '', description: '' });
@@ -322,16 +361,18 @@ const AdminPage = () => {
 
     const handleCategorySync = async () => {
         setIsLoading(true);
-        alert("Идет поиск старых категорий...");
+        alert("Шаг 1: Начинаю поиск...");
 
         try {
             const productsRef = collection(db, "products");
             const snapshot = await getDocs(productsRef);
-            
+            alert("Шаг 2: Список всех товаров успешно получен!");
+
             const allDbCategories = new Set(snapshot.docs.map(doc => doc.data().category).filter(Boolean));
             const validCategoryValues = new Set(categories.map(c => c.value));
             
             const oldCategories = [...allDbCategories].filter(cat => !validCategoryValues.has(cat));
+            alert(`Шаг 3: Найдено ${oldCategories.length} старых категорий для исправления.`);
 
             if (oldCategories.length > 0) {
                 setSyncData({ oldCategories, allDocs: snapshot.docs });
@@ -339,8 +380,9 @@ const AdminPage = () => {
                 alert("Старых категорий для обновления не найдено. Все актуально!");
             }
         } catch (error) {
-            console.error("Ошибка при поиске категорий:", error);
-            alert("Произошла ошибка при поиске старых категорий.");
+            console.error("ПОЙМАНА ОШИБКА ПРИ СИНХРОНИЗАЦИИ:", error);
+            // Показываем ошибку прямо на экране
+            alert(`Произошла ошибка! \n\nСообщение: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -385,6 +427,15 @@ const AdminPage = () => {
     return (
         <div className="container mx-auto px-6 py-12">
             <DuplicateFileModal conflict={conflict} onResolve={(res) => conflict?.resolve(res)} />
+                {/* ИЗМЕНЕНИЕ: Передаем 'categories' в SyncModal */}
+            {syncData && (
+                <SyncModal 
+                    oldCategories={syncData.oldCategories}
+                    newCategories={categories}
+                    onSync={executeSync}
+                    onCancel={() => setSyncData(null)}
+                />
+            )}
             <h1 className="text-3xl font-bold mb-8">Админ-панель</h1>
             <div className="bg-white p-6 rounded-lg shadow-md mb-12">
                 <h2 className="text-2xl font-semibold mb-6">{editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}</h2>
